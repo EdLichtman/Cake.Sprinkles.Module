@@ -19,7 +19,7 @@ namespace Cake.Sprinkles.Module.Tests
 
         protected IList<String> GetAllPropertiesAsNumbers(bool onlyRequired = false)
         {
-            return GetAllPropertiesWithFormatting("={0}", onlyRequired).ToList();
+            return GetAllPropertiesWithFormatting("={0}.{0}", onlyRequired).ToList();
         }
 
         protected IList<String> GetAllPropertiesAsStrings(bool onlyRequired = false)
