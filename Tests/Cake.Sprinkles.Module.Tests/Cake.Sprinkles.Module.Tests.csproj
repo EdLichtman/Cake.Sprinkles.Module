@@ -1,0 +1,30 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net6.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.1.0" />
+    <PackageReference Include="NUnit" Version="3.13.3" />
+    <PackageReference Include="NUnit3TestAdapter" Version="4.2.1" />
+    <PackageReference Include="NUnit.Analyzers" Version="3.3.0" />
+    <PackageReference Include="coverlet.collector" Version="3.1.2" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Cake.Sprinkles.Module.Tests.Models.BooleanTasks\Cake.Sprinkles.Module.Tests.Models.BooleanTasks.csproj" />
+    <ProjectReference Include="..\Cake.Sprinkles.Module.Tests.Models.DateTimeTasks\Cake.Sprinkles.Module.Tests.Models.DateTimeTasks.csproj" />
+    <ProjectReference Include="..\Cake.Sprinkles.Module.Tests.Models.DecimalTasks\Cake.Sprinkles.Module.Tests.Models.DecimalTasks.csproj" />
+    <ProjectReference Include="..\Cake.Sprinkles.Module.Tests.Models.GuidTasks\Cake.Sprinkles.Module.Tests.Models.GuidTasks.csproj" />
+    <ProjectReference Include="..\Cake.Sprinkles.Module.Tests.Models.Int32Tasks\Cake.Sprinkles.Module.Tests.Models.Int32Tasks.csproj" />
+    <ProjectReference Include="..\Cake.Sprinkles.Module.Tests.Models.InvalidTasks\Cake.Sprinkles.Module.Tests.Models.InvalidTasks.csproj" />
+    <ProjectReference Include="..\Cake.Sprinkles.Module.Tests.Models.StringTasks\Cake.Sprinkles.Module.Tests.Models.StringTasks.csproj" />
+    <ProjectReference Include="..\Cake.Sprinkles.Module.Tests.Models\Cake.Sprinkles.Module.Tests.Models.csproj" />
+  </ItemGroup>
+
+</Project>

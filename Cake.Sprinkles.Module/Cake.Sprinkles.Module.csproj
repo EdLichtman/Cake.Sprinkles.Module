@@ -1,0 +1,15 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net6.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <Platform>win-x64</Platform>
+    <IsPackable>false</IsPackable>
+    <NoWarn>${NoWarn};CS0067</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Cake.Frosting" Version="3.0.0" />
+  </ItemGroup>
+</Project>
