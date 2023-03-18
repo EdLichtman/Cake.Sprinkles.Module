@@ -9,7 +9,7 @@ namespace Cake.Sprinkles.Module.Tests
     internal class SprinklesDecimalTests : SprinklesTestBase
     {
         private CakeHost _host = null!;
-        private Int32Task? Context => (SprinklesTestContextProvider.Context as SprinklesTestContext<DecimalTask>)?.Task;
+        private DecimalTask? Context => (SprinklesTestContextProvider.Context as SprinklesTestContext<DecimalTask>)?.Task;
         private Exception? ThrownException => SprinklesTestContextProvider.ThrownException;
 
         [SetUp]
