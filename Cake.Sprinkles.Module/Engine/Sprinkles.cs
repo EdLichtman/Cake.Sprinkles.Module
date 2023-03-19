@@ -26,12 +26,12 @@ namespace Cake.Sprinkles.Module.Engine
 
             foreach (var property in properties)
             {
-                var name = SprinklesDecorations.GetArgumentName(property);
-
-                SprinklesValidator.ValidateBuildClassProperty(property);
-
                 try
                 {
+                    var name = SprinklesDecorations.GetArgumentName(property);
+
+                    SprinklesValidator.ValidateBuildClassProperty(property);
+
                     object? arguments;
                     var isEnumeration = SprinklesDecorations.IsEnumeration(property.PropertyType);
 

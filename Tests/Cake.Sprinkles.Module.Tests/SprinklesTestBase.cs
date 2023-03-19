@@ -32,6 +32,14 @@ namespace Cake.Sprinkles.Module.Tests
             return GetAllPropertiesWithFormatting("=true", onlyRequired).ToList();
         }
 
+        protected IEnumerable<string> FormatCustomArguments(params (string key, string value)[] arguments)
+        {
+            foreach (var argument in arguments)
+            {
+                yield return String.Format("--{0}={1}", argument.key, argument.value);
+            }
+        }
+
         private IEnumerable<String> GetAllPropertiesWithFormatting(String formatString = "", bool onlyRequired = false)
         {
             var listWithDuplicates = new List<String>();
