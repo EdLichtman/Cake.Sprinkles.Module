@@ -7,4 +7,8 @@
     <IsPackable>false</IsPackable>
   </PropertyGroup>
 
+    <ItemGroup>
+	    <ProjectReference Include="..\Cake.Sprinkles.Module.Tests.Models\Cake.Sprinkles.Module.Tests.Models.csproj" />
+    </ItemGroup>
+
 </Project>

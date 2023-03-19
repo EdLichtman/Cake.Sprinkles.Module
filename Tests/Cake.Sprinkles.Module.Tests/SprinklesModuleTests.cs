@@ -14,5 +14,6 @@ namespace Cake.Sprinkles.Module.Tests
         {
             throw new NotImplementedException("Will probably fail and that's why I think I need to reach out to the Cake Team.");
         }
+
     }
 }
