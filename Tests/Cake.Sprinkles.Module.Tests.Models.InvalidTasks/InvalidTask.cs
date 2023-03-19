@@ -7,6 +7,8 @@ namespace Cake.Sprinkles.Module.Tests.Models.InvalidTasks
     [TaskName("Default")]
     public class InvalidTask : FrostingTask<SprinklesTestContext<InvalidTask>>
     {
+        public const string MyRequiredPropertyDescription = "The description that will be shown to the user when a property is required that is not set.";
+
         [TaskArgumentName(nameof(MyInvalidEnumerableProperty))]
         public List<string> MyInvalidEnumerableProperty { get; set; }
 
@@ -23,7 +25,6 @@ namespace Cake.Sprinkles.Module.Tests.Models.InvalidTasks
         [TaskArgumentIsFlag]
         public ImmutableList<bool> MyEnumerableFlagProperty { get; set; }
 
-        const string MyRequiredPropertyDescription = "The description that will be shown to the user when a property is required that is not set.";
         [TaskArgumentName(nameof(MyRequiredProperty))]
         [TaskArgumentDescription(MyRequiredPropertyDescription)]
         [TaskArgumentIsRequired]
@@ -34,6 +35,7 @@ namespace Cake.Sprinkles.Module.Tests.Models.InvalidTasks
         public ImmutableList<string> MyDelimiterProperty { get; set; }
 
         [TaskArgumentName(nameof(MyInvalidDelimiterProperty))]
+        [TaskArgumentEnumerationDelimiter(";")]
         public string MyInvalidDelimiterProperty { get; set; }
         public override void Run(SprinklesTestContext<InvalidTask> context)
         {
