@@ -26,67 +26,149 @@ namespace Cake.Sprinkles.Module.Tests
         [Test]
         public void ThrowsExceptionIfTaskContainsEnumerableThatIsNotImmutableListOrHashSet()
         {
+            var knownInvalidTaskNameProperty = nameof(InvalidTask.MyInvalidEnumerableProperty);
             _host.Run(
                 FormatCustomArguments(
-                    (key: nameof(InvalidTask.MyInvalidEnumerableProperty), value: "foo"),
-                    (key: nameof(InvalidTask.MyRequiredProperty), value: "bar")
+                    (key: knownInvalidTaskNameProperty, value: "foo")
                 ));
 
-            var exception = ThrownException?.InnerExceptions.FirstOrDefault() as SprinklesException;
+            var exception = ThrownException?
+                    .InnerExceptions
+                    .FirstOrDefault(ex => 
+                        (ex as SprinklesException)?.TaskArgumentName == knownInvalidTaskNameProperty
+                    ) as SprinklesException;
+
             Assert.That(exception, Is.Not.Null);
-            Assert.That(exception.InnerMessage, Is.EqualTo($"An enumerable Argument must implement {nameof(ImmutableList)} or {nameof(ImmutableHashSet)}"));
-            Assert.That(exception.TaskArgumentName, Is.EqualTo(nameof(InvalidTask.MyInvalidEnumerableProperty)));
+            Assert.That(exception.InnerMessage, Is.EqualTo(SprinklesValidator.Message_EnumerableMustImplementImmutableList));
         }
 
         [Test]
         public void ThrowsExceptionIfTaskContainsFlagButNoBoolean()
         {
+            var knownInvalidTaskNameProperty = nameof(InvalidTask.MyInvalidFlagProperty);
             _host.Run(
-                           FormatCustomArguments(
-                               (key: nameof(InvalidTask.MyInvalidFlagProperty), value: "foo"),
-                               (key: nameof(InvalidTask.MyRequiredProperty), value: "bar")
-                           ));
+                FormatCustomArguments(
+                    (key: knownInvalidTaskNameProperty, value: "foo")
+                ));
 
-            var exception = ThrownException?.InnerExceptions.FirstOrDefault() as SprinklesException;
+            var exception = ThrownException?
+                    .InnerExceptions
+                    .FirstOrDefault(ex =>
+                        (ex as SprinklesException)?.TaskArgumentName == knownInvalidTaskNameProperty
+                    ) as SprinklesException;
+
             Assert.That(exception, Is.Not.Null);
-            Assert.That(exception.InnerMessage, Is.EqualTo("An argument that accepts a flag must be a boolean."));
-            Assert.That(exception.TaskArgumentName, Is.EqualTo(nameof(InvalidTask.MyInvalidFlagProperty)));
+            Assert.That(exception.InnerMessage, Is.EqualTo(SprinklesValidator.Message_FlagMustBeBoolean));
         }
 
         [Test]
         public void ThrowsExceptionIfTaskArgumentFlagIsRequired()
         {
-            throw new NotImplementedException();
+            var knownInvalidTaskNameProperty = nameof(InvalidTask.MyRequiredFlagProperty);
+            _host.Run(
+                FormatCustomArguments(
+                    (key: knownInvalidTaskNameProperty, value: "foo")
+                ));
+
+            var exception = ThrownException?
+                    .InnerExceptions
+                    .FirstOrDefault(ex =>
+                        (ex as SprinklesException)?.TaskArgumentName == knownInvalidTaskNameProperty
+                    ) as SprinklesException;
+
+            Assert.That(exception, Is.Not.Null);
+            Assert.That(exception.InnerMessage, Is.EqualTo(SprinklesValidator.Message_FlagCannotBeRequired));
         }
 
         [Test]
         public void ThrowsExceptionIfTaskContainsFlagThatIsEnumerable()
         {
-            throw new NotImplementedException();
+            var knownInvalidTaskNameProperty = nameof(InvalidTask.MyEnumerableFlagProperty);
+            _host.Run(
+                FormatCustomArguments(
+                    (key: knownInvalidTaskNameProperty, value: "foo")
+                ));
+
+            var exception = ThrownException?
+                    .InnerExceptions
+                    .FirstOrDefault(ex =>
+                        (ex as SprinklesException)?.TaskArgumentName == knownInvalidTaskNameProperty
+                    ) as SprinklesException;
+
+            Assert.That(exception, Is.Not.Null);
+            Assert.That(exception.InnerMessage, Is.EqualTo(SprinklesValidator.Message_FlagMustNotBeEnumerable));
         }
 
         [Test]
         public void AddsDescriptionToRequiredArgument()
         {
-            throw new NotImplementedException();
+            var knownInvalidTaskNameProperty = nameof(InvalidTask.MyRequiredProperty);
+            _host.Run(FormatCustomArguments());
+
+            var exception = ThrownException?
+                    .InnerExceptions
+                    .FirstOrDefault(ex =>
+                        (ex as SprinklesException)?.TaskArgumentName == knownInvalidTaskNameProperty
+                    ) as SprinklesException;
+
+            Assert.That(exception, Is.Not.Null);
+            Assert.That(exception.TaskArgumentDescription, Is.EqualTo(InvalidTask.MyRequiredPropertyDescription));
+            Assert.That(exception.Message, Does.Contain($"Description: {InvalidTask.MyRequiredPropertyDescription}"));
         }
         
         [Test]
         public void ThrowsExceptionIfInputHasDelimiterAndMoreThanOneArgumentPassedIn()
         {
-            throw new NotImplementedException(); 
+            var knownInvalidTaskNameProperty = nameof(InvalidTask.MyDelimiterProperty);
+            _host.Run(
+                FormatCustomArguments(
+                    (key: knownInvalidTaskNameProperty, value: "foo"),
+                    (key: knownInvalidTaskNameProperty, value: "bar")
+                ));
+
+            var exception = ThrownException?
+                    .InnerExceptions
+                    .FirstOrDefault(ex =>
+                        (ex as SprinklesException)?.TaskArgumentName == knownInvalidTaskNameProperty
+                    ) as SprinklesException;
+
+            Assert.That(exception, Is.Not.Null);
+            Assert.That(exception.InnerMessage, Is.EqualTo(SprinklesValidator.Message_EnumerableDelimiterCannotHaveMoreThanOneArgument));
         }
 
         [Test]
         public void ThrowsExceptionIfDelimiterIsSetOnArgumentWithNoEnumeration()
         {
-            throw new NotImplementedException(); 
+            var knownInvalidTaskNameProperty = nameof(InvalidTask.MyInvalidDelimiterProperty);
+            _host.Run(
+                FormatCustomArguments(
+                    (key: knownInvalidTaskNameProperty, value: "foo")
+                ));
+
+            var exception = ThrownException?
+                    .InnerExceptions
+                    .FirstOrDefault(ex =>
+                        (ex as SprinklesException)?.TaskArgumentName == knownInvalidTaskNameProperty
+                    ) as SprinklesException;
+
+            Assert.That(exception, Is.Not.Null);
+            Assert.That(exception.InnerMessage, Is.EqualTo(SprinklesValidator.Message_EnumerableDelimiterMustImplementEnumerable));
         }
 
         [Test]
         public void ErrorThrownBySprinklesWithNoDescriptionHasNoDescriptionInMessage()
         {
-            throw new NotImplementedException();
+            var knownInvalidTaskNameProperty = nameof(InvalidTask.MyInvalidEnumerableProperty);
+            _host.Run(FormatCustomArguments());
+
+            var exception = ThrownException?
+                    .InnerExceptions
+                    .FirstOrDefault(ex =>
+                        (ex as SprinklesException)?.TaskArgumentName == knownInvalidTaskNameProperty
+                    ) as SprinklesException;
+
+            Assert.That(exception, Is.Not.Null);
+            Assert.That(exception.Message, Does.Not.Contain("Description:"));
         }
     }
 }
