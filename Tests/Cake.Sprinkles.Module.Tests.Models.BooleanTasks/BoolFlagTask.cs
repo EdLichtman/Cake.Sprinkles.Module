@@ -4,10 +4,10 @@ using Cake.Sprinkles.Module.Tests.Models;
 
 namespace Cake.Sprinkles.Module.Tests.Models.BooleanTasks
 {
-    [TaskName("Flag")]
+    [TaskName(nameof(BoolFlagTask))]
     public class BoolFlagTask : FrostingTask<SprinklesTestContext<BoolFlagTask>>
     {
-        [TaskArgumentName("flag")]
+        [TaskArgumentName(nameof(HasArgument))]
         [TaskArgumentIsFlag]
         public bool HasArgument { get; set; }
 

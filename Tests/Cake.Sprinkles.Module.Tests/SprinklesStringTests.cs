@@ -1,152 +1,127 @@
-﻿using Cake.Frosting;
-using Cake.Sprinkles.Module.Tests.Models;
-using Cake.Sprinkles.Module.Tests.Models.String;
+﻿using Cake.Sprinkles.Module.Tests.Models.StringTasks;
+using Cake.Sprinkles.Module.Validation;
 
 namespace Cake.Sprinkles.Module.Tests
 {
     [TestFixture]
     internal class SprinklesStringTests : SprinklesTestBase
     {
-        private CakeHost _host = null!;
-        private StringTask? Context => (SprinklesTestContextProvider.Context as SprinklesTestContext<StringTask>)?.Task;
-        //private Exception? ThrownException => ArgumentExtensionsContextProvider<String>.ThrownException;
-
-        [SetUp]
-        public void SetUp()
+        private IList<string> RequiredArguments = new List<string>
         {
-            _host = GetCakeHost<StringTask>();
+                nameof(StringRequiredTask.Single),
+                nameof(StringRequiredTask.List),
+                nameof(StringRequiredTask.HashSet)
+        };
+
+        private IList<string> OptionalArguments = new List<string>
+        {
+                nameof(StringOptionalTask.Single),
+                nameof(StringOptionalTask.List),
+                nameof(StringOptionalTask.HashSet)
+        };
+
+        private IList<string> ArgumentValues = new List<string>
+        {
+            "foo",
+            "bar",
+            "foobar"
+        };
+
+        [Test]
+        public void CanRequireMultipleArguments()
+        {
+            var result = GetCakeHost<StringRequiredTask>().Run(FormatCustomArguments(nameof(StringRequiredTask)));
+
+            Assert.That(result, Is.EqualTo(-1), "Task succeeded when it should have failed.");
+
+            var exceptions = GetSprinklesExceptions();
+            Assert.That(exceptions, Is.Not.Null.Or.Empty);
+            Assert.Multiple(() =>
+            {
+                foreach (var expectedArgument in RequiredArguments)
+                {
+                    var exception = exceptions.FirstOrDefault(x => x.TaskArgumentName == expectedArgument);
+                    Assert.That(exception?.InnerMessage, Is.EqualTo(SprinklesValidator.Message_ArgumentWasNotSet));
+                }
+            });
         }
 
-        //[Test]
-        //public void CanRequireMultipleArguments()
-        //{
-        //    var result = _host.Run(new String[] { });
+        [Test]
+        public void CanDecorateRequiredSingleWithLastValue()
+        {
+            var properties = PrepareArguments(RequiredArguments.SelectMany(x => ArgumentValues, (arg, value) => (arg, value.ToString())));
+            var result = GetCakeHost<StringRequiredTask>().Run(FormatCustomArguments(nameof(StringRequiredTask), properties));
 
-        //    Assert.That(result, Is.EqualTo(-1), "StringTask succeeded when it should have failed.");
-
-        //    Assert.That(ThrownException, Is.Not.Null);
-        //    Assert.Multiple(() =>
-        //    {
-        //        Assert.That(ThrownException!.Message, Does.Contain("Argument 'required_single' was not set."));
-        //        Assert.That(ThrownException!.Message, Does.Contain("Argument 'required_list' was not set."));
-        //        Assert.That(ThrownException!.Message, Does.Contain("Argument 'required_hashset' was not set."));
-        //    });
-        //}
-
-        //[Test]
-        //public void CanDecorateRequiredSingle()
-        //{
-        //    var arguments = GetAllPropertiesAsNumbers();
-        //    var result = _host.Run(arguments);
-
-        //    Assert.That(result, Is.EqualTo(0), "StringTask failed.");
-
-        //    var lastRequiredString = arguments.Last(x => x.Contains("required_single")).Split("=")[1];
-
-        //    Assert.That(Context?.RequiredSingle, Is.EqualTo(lastRequiredString));
-        //}
+            Assert.That(result, Is.EqualTo(0), "Task failed.");
+            Assert.That(GetContext<StringRequiredTask>()?.Single, Is.EqualTo(ArgumentValues.Last()));
+        }
 
         [Test]
         public void CanDecorateRequiredList()
         {
-            var arguments = GetAllPropertiesAsNumbers();
-            var result = _host.Run(arguments);
+            var properties = PrepareArguments(RequiredArguments.SelectMany(x => ArgumentValues, (arg, value) => (arg, value.ToString())));
+            var result = GetCakeHost<StringRequiredTask>().Run(FormatCustomArguments(nameof(StringRequiredTask), properties));
 
-            Assert.That(result, Is.EqualTo(0), "StringTask failed.");
-
-            var lastRequiredStrings = arguments.Where(x => x.Contains("required_list")).Select(x => x.Split("=")[1]).ToList();
-
-            Assert.That(Context?.RequiredList, Is.EqualTo(lastRequiredStrings));
+            Assert.That(result, Is.EqualTo(0), "Task failed.");
+            Assert.That(GetContext<StringRequiredTask>()?.List, Is.EqualTo(ArgumentValues));
         }
 
         [Test]
         public void CanDecorateRequiredHashSet()
         {
-            var arguments = GetAllPropertiesAsNumbers();
-            var result = _host.Run(arguments);
+            var properties = PrepareArguments(RequiredArguments.SelectMany(x => ArgumentValues, (arg, value) => (arg, value.ToString())));
+            var result = GetCakeHost<StringRequiredTask>().Run(FormatCustomArguments(nameof(StringRequiredTask), properties));
 
-            Assert.That(result, Is.EqualTo(0), "StringTask failed.");
-
-            var lastRequiredStrings =
-                arguments
-                    .Where(x => x.Contains("required_hashset"))
-                    .Select(x => x.Split("=")[1])
-                    .OrderBy(x => x)
-                    .ToList();
-
-            Assert.That(Context?.RequiredHashSet.OrderBy(x => x).ToList(), Is.EqualTo(lastRequiredStrings));
+            Assert.That(result, Is.EqualTo(0), "Task failed.");
+            Assert.That(GetContext<StringRequiredTask>()?.List, Is.EqualTo(ArgumentValues));
         }
 
         [Test]
         public void CanDecorateOptionalSingle()
         {
-            var arguments = GetAllPropertiesAsNumbers();
-            var result = _host.Run(arguments);
+            var properties = PrepareArguments(OptionalArguments.SelectMany(x => ArgumentValues, (arg, value) => (arg, value.ToString())));
+            var result = GetCakeHost<StringOptionalTask>().Run(FormatCustomArguments(nameof(StringOptionalTask), properties));
 
-            Assert.That(result, Is.EqualTo(0), "StringTask failed.");
-
-            var lastRequiredString = arguments.Last(x => x.Contains("optional_single")).Split("=")[1];
-
-            Assert.That(Context?.OptionalSingle, Is.EqualTo(lastRequiredString));
+            Assert.That(result, Is.EqualTo(0), "Task failed.");
+            Assert.That(GetContext<StringOptionalTask>()?.Single, Is.EqualTo(ArgumentValues.Last()));
         }
 
         [Test]
         public void CanDecorateOptionalList()
         {
-            var arguments = GetAllPropertiesAsNumbers();
-            var result = _host.Run(arguments);
+            var properties = PrepareArguments(OptionalArguments.SelectMany(x => ArgumentValues, (arg, value) => (arg, value.ToString())));
+            var result = GetCakeHost<StringOptionalTask>().Run(FormatCustomArguments(nameof(StringOptionalTask), properties));
 
-            Assert.That(result, Is.EqualTo(0), "StringTask failed.");
-
-            var lastRequiredStrings = arguments.Where(x => x.Contains("optional_list")).Select(x => x.Split("=")[1]).ToList();
-
-            Assert.That(Context?.OptionalList, Is.EqualTo(lastRequiredStrings));
+            Assert.That(result, Is.EqualTo(0), "Task failed.");
+            Assert.That(GetContext<StringOptionalTask>()?.List, Is.EqualTo(ArgumentValues));
         }
 
         [Test]
         public void CanDecorateOptionalHashSet()
         {
-            var arguments = GetAllPropertiesAsNumbers();
-            var result = _host.Run(arguments);
+            var properties = PrepareArguments(OptionalArguments.SelectMany(x => ArgumentValues, (arg, value) => (arg, value.ToString())));
+            var result = GetCakeHost<StringOptionalTask>().Run(FormatCustomArguments(nameof(StringOptionalTask), properties));
 
-            Assert.That(result, Is.EqualTo(0), "StringTask failed.");
-
-            var lastRequiredStrings = 
-                arguments
-                    .Where(x => x.Contains("optional_hashset"))
-                    .Select(x => x.Split("=")[1])
-                    .OrderBy(x => x)
-                    .ToList();
-
-            Assert.That(Context?.OptionalHashSet.OrderBy(x => x).ToList(), Is.EqualTo(lastRequiredStrings));
+            Assert.That(result, Is.EqualTo(0), "Task failed.");
+            Assert.That(GetContext<StringOptionalTask>()?.List, Is.EqualTo(ArgumentValues));
         }
 
         [Test]
-        public void OptionalListIsInstantiatedEvenWhenNoArgumentsProvided()
+        public void CanInstantiateNullOptionalList()
         {
-            var arguments = GetAllPropertiesAsStrings(true);
-            var result = _host.Run(arguments);
+            var result = GetCakeHost<StringOptionalTask>().Run(FormatCustomArguments(nameof(StringOptionalTask)));
 
-            Assert.That(result, Is.EqualTo(0), "StringTask failed.");
-            Assert.Multiple(() =>
-            {
-                Assert.That(Context?.OptionalList, Is.Not.Null);
-                Assert.That(Context?.OptionalList, Is.Empty);
-            });
+            Assert.That(result, Is.EqualTo(0), "Task failed.");
+            Assert.That(GetContext<StringOptionalTask>()?.List, Is.Not.Null);
         }
 
         [Test]
-        public void OptionalHashSetIsInstantiatedEvenWhenNoArgumentsProvided()
+        public void CanInstantiateNullOptionalHashSet()
         {
-            var arguments = GetAllPropertiesAsStrings(true);
-            var result = _host.Run(arguments);
+            var result = GetCakeHost<StringOptionalTask>().Run(FormatCustomArguments(nameof(StringOptionalTask)));
 
-            Assert.That(result, Is.EqualTo(0), "StringTask failed.");
-            Assert.Multiple(() =>
-            {
-                Assert.That(Context?.OptionalHashSet, Is.Not.Null);
-                Assert.That(Context?.OptionalHashSet, Is.Empty);
-            });
+            Assert.That(result, Is.EqualTo(0), "Task failed.");
+            Assert.That(GetContext<StringOptionalTask>()?.HashSet, Is.Not.Null);
         }
     }
 }

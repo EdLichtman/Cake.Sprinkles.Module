@@ -1,34 +1,74 @@
 ﻿using System.Collections;
 using System.Collections.Immutable;
+using System.Linq.Expressions;
 using System.Reflection;
 using Cake.Frosting;
+using Cake.Sprinkles.Module.Annotations.Arguments;
+using Cake.Sprinkles.Module.TypeConversion;
+using Cake.Sprinkles.Module.Validation;
+using Cake.Sprinkles.Module.Validation.Exceptions;
 
 namespace Cake.Sprinkles.Module.Annotations
 {
     internal class SprinklesDecorations
     {
-        internal static String GetTaskName(IFrostingTask task)
+        internal static string? GetNamespaceClassQualifiedPropertyName(PropertyInfo? propertyInfo)
         {
-            var type = task.GetType();
-            var nameAttribute = type.GetCustomAttribute(typeof(TaskNameAttribute));
-            if (nameAttribute != null)
+            if (propertyInfo == null)
             {
-                return ((TaskNameAttribute)nameAttribute).Name;
+                return null;
             }
 
-            return String.Empty;
+            var declaringType = propertyInfo.DeclaringType;
+            if (declaringType == null)
+            {
+                return null;
+            }
+
+            return $"{declaringType.Namespace}.{declaringType.Name}.{propertyInfo.Name}";
         }
 
-        internal static String GetTaskDescription(IFrostingTask task)
+        internal static string GetTaskName(IFrostingTask task)
         {
-            var type = task.GetType();
-            var nameAttribute = type.GetCustomAttribute(typeof(TaskDescriptionAttribute));
-            if (nameAttribute != null)
+            return GetTaskName(task.GetType());
+        }
+
+        internal static string GetTaskName(Type type)
+        {
+            var attr = type.GetCustomAttribute(typeof(TaskNameAttribute));
+            if (attr != null)
             {
-                return ((TaskDescriptionAttribute)nameAttribute).Description;
+                return ((TaskNameAttribute)attr).Name;
             }
 
-            return String.Empty;
+            return string.Empty;
+        }
+
+        internal static string GetTaskDescription(IFrostingTask task)
+        {
+            return GetTaskDescription(task.GetType());
+        }
+
+        internal static string GetTaskDescription(Type type)
+        {
+            var attr = type.GetCustomAttribute(typeof(TaskDescriptionAttribute));
+            if (attr != null)
+            {
+                return ((TaskDescriptionAttribute)attr).Description;
+            }
+
+            return string.Empty;
+        }
+
+        internal static bool IsExternalTaskArguments(PropertyInfo propertyInfo)
+        {
+            var attr = propertyInfo.GetCustomAttribute(typeof(TaskArgumentsAttribute));
+            if (attr != null)
+            {
+                return true;
+            }
+
+            return false;
         }
 
         internal static bool IsTaskArgument(PropertyInfo propertyInfo)
@@ -38,10 +78,10 @@ namespace Cake.Sprinkles.Module.Annotations
 
         internal static string GetArgumentName(PropertyInfo propertyInfo)
         {
-            var attribute = propertyInfo.GetCustomAttribute(typeof(TaskArgumentNameAttribute));
-            if (attribute != null)
+            var attr = propertyInfo.GetCustomAttribute(typeof(TaskArgumentNameAttribute));
+            if (attr != null)
             {
-                return ((TaskArgumentNameAttribute)attribute).Name;
+                return ((TaskArgumentNameAttribute)attr).Name;
             }
 
             return string.Empty;
@@ -49,21 +89,40 @@ namespace Cake.Sprinkles.Module.Annotations
 
         internal static string GetArgumentDescription(PropertyInfo propertyInfo)
         {
-            var attribute = propertyInfo.GetCustomAttribute(typeof(TaskArgumentDescriptionAttribute));
-            if (attribute != null)
+            var attr = propertyInfo.GetCustomAttribute(typeof(TaskArgumentDescriptionAttribute));
+            if (attr != null)
             {
-                return ((TaskArgumentDescriptionAttribute)attribute).Description;
+                return ((TaskArgumentDescriptionAttribute)attr).Description;
             }
 
             return string.Empty;
         }
 
-        internal static IList<string> GetArgumentUsageExamples(PropertyInfo propertyInfo)
+        internal static Type GetArgumentType(PropertyInfo propertyInfo)
         {
-            var attributes = propertyInfo.GetCustomAttributes(typeof(TaskArgumentUsageAttribute))?.ToList();
-            if (attributes?.Count > 0)
+            if (IsEnumeration(propertyInfo.PropertyType))
             {
-                return attributes.Select(x => ((TaskArgumentUsageAttribute)x).UsageExample).ToList();
+                var enumeratedType = GetEnumeratedType(propertyInfo.PropertyType);
+                if (enumeratedType == null)
+                {
+                    throw new SprinklesException(
+                        propertyInfo,
+                        "Something went wrong while getting argument type for argument. Expected an Enumeration, but found no enumerated type.",
+                        $"Type: {propertyInfo.PropertyType}");
+                }
+
+                return propertyInfo.PropertyType.MakeGenericType(enumeratedType);
+            }
+
+            return propertyInfo.PropertyType;
+        }
+
+        internal static IList<string> GetArgumentExampleValues(PropertyInfo propertyInfo)
+        {
+            var attrs = propertyInfo.GetCustomAttributes(typeof(TaskArgumentExampleValueAttribute))?.ToList();
+            if (attrs?.Count > 0)
+            {
+                return attrs.Select(x => ((TaskArgumentExampleValueAttribute)x).UsageExample).ToList();
             }
 
             return new List<string>();
@@ -71,10 +130,10 @@ namespace Cake.Sprinkles.Module.Annotations
 
         internal static string GetArgumentEnumerationDelimiterName(PropertyInfo propertyInfo)
         {
-            var nameAttribute = propertyInfo.GetCustomAttribute(typeof(TaskArgumentEnumerationDelimiterAttribute));
-            if (nameAttribute != null)
+            var attr = propertyInfo.GetCustomAttribute(typeof(TaskArgumentEnumerationDelimiterAttribute));
+            if (attr != null)
             {
-                return ((TaskArgumentEnumerationDelimiterAttribute)nameAttribute).Delimiter;
+                return ((TaskArgumentEnumerationDelimiterAttribute)attr).Delimiter;
             }
 
             return string.Empty;
@@ -82,7 +141,7 @@ namespace Cake.Sprinkles.Module.Annotations
 
         internal static bool HasArgumentEnumerationDelimiter(PropertyInfo propertyInfo)
         {
-            return !String.IsNullOrWhiteSpace(GetArgumentEnumerationDelimiterName(propertyInfo));
+            return !string.IsNullOrWhiteSpace(GetArgumentEnumerationDelimiterName(propertyInfo));
         }
 
         internal static bool IsFlag(PropertyInfo propertyInfo)
@@ -105,6 +164,39 @@ namespace Cake.Sprinkles.Module.Annotations
             }
 
             return false;
+        }
+
+        internal static IList<TaskArgumentValidationAttribute> GetArgumentValidations(PropertyInfo propertyInfo)
+        {
+            var attr = propertyInfo.GetCustomAttributes().Where(x => x.GetType().IsAssignableTo(typeof(TaskArgumentValidationAttribute)));
+            if (attr != null)
+            {
+                return attr.Select(x => (TaskArgumentValidationAttribute)x).ToList();
+            }
+
+            return new List<TaskArgumentValidationAttribute>();
+        }
+
+        internal static ITaskArgumentTypeConverter? GetArgumentConverter(PropertyInfo propertyInfo)
+        {
+            var attr = propertyInfo.GetCustomAttribute(typeof(TaskArgumentConverterAttribute));
+            if (attr != null)
+            {
+                return ((TaskArgumentConverterAttribute)attr).Converter;
+            }
+
+            return null;
+        }
+
+        internal static bool IsArgumentConverterValid(PropertyInfo propertyInfo)
+        {
+            var attr = propertyInfo.GetCustomAttribute(typeof(TaskArgumentConverterAttribute));
+            if (attr != null)
+            {
+                return ((TaskArgumentConverterAttribute)attr).Converter != null;
+            }
+
+            return true;
         }
 
         internal static bool IsEnumeration(Type type)

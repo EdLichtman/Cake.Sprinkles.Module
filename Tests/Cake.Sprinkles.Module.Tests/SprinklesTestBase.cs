@@ -1,12 +1,39 @@
-﻿using System.Reflection;
-using Cake.Frosting;
-using Cake.Sprinkles.Module;
+﻿using Cake.Frosting;
+using Cake.Sprinkles.Module.Annotations;
 using Cake.Sprinkles.Module.Tests.Models;
+using Cake.Sprinkles.Module.Validation.Exceptions;
+using System;
 
 namespace Cake.Sprinkles.Module.Tests
 {
     internal class SprinklesTestBase
     {
+        protected int RunCakeHost<TFrostingTask>(IEnumerable<(string, string)> args) where TFrostingTask : IFrostingTask
+        {
+            var argsList = args.ToList();
+            argsList.Add(("target", SprinklesDecorations.GetTaskName(typeof(TFrostingTask))));
+            var taskAssembly = typeof(TFrostingTask).Assembly;
+            return new CakeHost()
+                .UseContext<SprinklesTestContext<TFrostingTask>>()
+                .UseTeardown<SprinklesTestTeardown>()
+                .UseModule<SprinklesDescriptionModule>()
+                .AddAssembly(taskAssembly)
+                .Run(FormatCustomArguments(argsList.Select(x => (x.Item1, (string?)x.Item2)).ToArray()));
+        }
+
+        protected int RunCakeHost<TFrostingTask>(params (string, string?)[] args) where TFrostingTask : IFrostingTask
+        {
+            var argsList = args.ToList();
+            argsList.Add(("target", SprinklesDecorations.GetTaskName(typeof(TFrostingTask))));
+            var taskAssembly = typeof(TFrostingTask).Assembly;
+            return new CakeHost()
+                .UseContext<SprinklesTestContext<TFrostingTask>>()
+                .UseTeardown<SprinklesTestTeardown>()
+                .UseModule<SprinklesDescriptionModule>()
+                .AddAssembly(taskAssembly)
+                .Run(FormatCustomArguments(argsList.ToArray()));
+        }
+
         protected CakeHost GetCakeHost<TFrostingTask>() where TFrostingTask : IFrostingTask
         {
             var taskAssembly = typeof(TFrostingTask).Assembly;
@@ -17,56 +44,78 @@ namespace Cake.Sprinkles.Module.Tests
                 .AddAssembly(taskAssembly);
         }
 
-        protected IList<String> GetAllPropertiesAsNumbers(bool onlyRequired = false)
+        protected TTask? GetContext<TTask>() where TTask : IFrostingTask
         {
-            return GetAllPropertiesWithFormatting("={0}.{0}", onlyRequired).ToList();
+            var context = (SprinklesTestContextProvider.Context as SprinklesTestContext<TTask>);
+            if (context == null)
+            {
+                return default;
+            }
+            return context.Task;
         }
 
-        protected IList<String> GetAllPropertiesAsStrings(bool onlyRequired = false)
+        protected SprinklesException? FilterSprinklesExceptionForProperty<TType>(IList<SprinklesException>? exceptions, string propertyName)
         {
-            return GetAllPropertiesWithFormatting("=test_{0}", onlyRequired).ToList();
+            var property = typeof(TType).GetProperty(propertyName);
+            if (property == null)
+            {
+                return null;
+            }
+
+            var namespaceClassQualifiedPropertyName = SprinklesDecorations.GetNamespaceClassQualifiedPropertyName(property);
+            return exceptions?.FirstOrDefault(x => x.NamespaceClassQualifiedPropertyName == namespaceClassQualifiedPropertyName);
         }
 
-        protected IList<String> GetAllPropertiesAsBooleans(bool onlyRequired = false)
+        protected SprinklesException? GetSprinklesExceptionForProperty<TType>(string propertyName)
         {
-            return GetAllPropertiesWithFormatting("=true", onlyRequired).ToList();
+            return FilterSprinklesExceptionForProperty<TType>(GetSprinklesExceptions(), propertyName);
         }
 
-        protected IEnumerable<string> FormatCustomArguments(params (string key, string value)[] arguments)
+        protected IList<SprinklesException>? GetSprinklesExceptions()
+        {
+            var thrownException = (SprinklesTestContextProvider.ThrownException as AggregateException);
+            var innerExceptions = thrownException?
+                .InnerExceptions?
+                .Select(x => x as SprinklesException)
+                .Except(new SprinklesException?[] { null })
+                // required for nullability, we make sure we're not including nulls above.
+                .Cast<SprinklesException>();
+
+            return innerExceptions?.ToList();
+        }
+
+        protected (string key, string? value)[] PrepareArguments(IEnumerable<(string, string)> arguments)
+        {
+            return arguments.Select(x => (x.Item1, (string?)x.Item2)).ToArray();
+        }
+
+        protected string[] FormatCustomArguments(string target, params (string key, string? value)[] arguments)
+        {
+            var argumentsWithTarget = arguments.ToList();
+            argumentsWithTarget.Add(("target", target));
+
+            return FormatCustomArgumentsEnumerable(argumentsWithTarget.ToArray()).ToArray();
+        }
+
+        protected string[] FormatCustomArguments(params (string key, string? value)[] arguments)
+        {
+            return FormatCustomArgumentsEnumerable(arguments).ToArray();
+        }
+
+        private IEnumerable<string> FormatCustomArgumentsEnumerable(params (string key, string? value)[] arguments)
         {
             foreach (var argument in arguments)
             {
-                yield return String.Format("--{0}={1}", argument.key, argument.value);
-            }
-        }
-
-        private IEnumerable<String> GetAllPropertiesWithFormatting(String formatString = "", bool onlyRequired = false)
-        {
-            var listWithDuplicates = new List<String>();
-            var propertyKeys = onlyRequired ? PropertyKeys.Where(x => x.StartsWith("required")) : PropertyKeys;
-            foreach (var key in propertyKeys)
-            {
-                listWithDuplicates.Add(key);
-                listWithDuplicates.Add(key);
-            }
-
-            for (var i = 0; i < listWithDuplicates.Count; i++)
-            {
-                var key = listWithDuplicates[i];
-                if (formatString.Contains("{0}"))
-                    yield return $"--{key}" + String.Format(formatString, i);
+                if (string.IsNullOrWhiteSpace(argument.value))
+                {
+                    yield return string.Format("--{0}", argument.key);
+                }
                 else
-                    yield return $"--{key}" + formatString;
+                {
+                    yield return string.Format("--{0}={1}", argument.key, argument.value);
+                }
+
             }
         }
-        protected IList<String> PropertyKeys = new List<String>()
-        {
-            "required_single",
-            "required_list",
-            "required_hashset",
-            "optional_single",
-            "optional_list",
-            "optional_hashset"
-        };
     }
 }

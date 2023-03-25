@@ -1,42 +1,22 @@
-﻿using Cake.Frosting;
-using Cake.Sprinkles.Module.Tests.Models.Int32;
-using Cake.Sprinkles.Module.Tests.Models;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using Cake.Sprinkles.Module.Annotations;
 using Cake.Sprinkles.Module.Tests.Models.InvalidTasks;
-using System.Collections.Immutable;
+using Cake.Sprinkles.Module.Validation;
 
 namespace Cake.Sprinkles.Module.Tests
 {
     internal class SprinklesInvalidArgumentsTests : SprinklesTestBase
     {
-
-        private CakeHost _host = null!;
-        private Int32Task? Context => (SprinklesTestContextProvider.Context as SprinklesTestContext<Int32Task>)?.Task;
-        private AggregateException? ThrownException => SprinklesTestContextProvider.ThrownException as AggregateException;
-
-        [SetUp]
-        public void SetUp() 
-        {
-            _host = this.GetCakeHost<InvalidTask>();
-        }
         [Test]
         public void ThrowsExceptionIfTaskContainsEnumerableThatIsNotImmutableListOrHashSet()
         {
             var knownInvalidTaskNameProperty = nameof(InvalidTask.MyInvalidEnumerableProperty);
-            _host.Run(
-                FormatCustomArguments(
-                    (key: knownInvalidTaskNameProperty, value: "foo")
-                ));
 
-            var exception = ThrownException?
-                    .InnerExceptions
-                    .FirstOrDefault(ex => 
-                        (ex as SprinklesException)?.TaskArgumentName == knownInvalidTaskNameProperty
-                    ) as SprinklesException;
+            RunCakeHost<InvalidTask>((knownInvalidTaskNameProperty, "foo"));
+
+            var exceptions = GetSprinklesExceptions();
+            Assert.That(exceptions, Is.Not.Null.And.Not.Empty);
+
+            var exception = exceptions.FirstOrDefault(ex => ex.TaskArgumentName == knownInvalidTaskNameProperty);
 
             Assert.That(exception, Is.Not.Null);
             Assert.That(exception.InnerMessage, Is.EqualTo(SprinklesValidator.Message_EnumerableMustImplementImmutableList));
@@ -46,16 +26,13 @@ namespace Cake.Sprinkles.Module.Tests
         public void ThrowsExceptionIfTaskContainsFlagButNoBoolean()
         {
             var knownInvalidTaskNameProperty = nameof(InvalidTask.MyInvalidFlagProperty);
-            _host.Run(
-                FormatCustomArguments(
-                    (key: knownInvalidTaskNameProperty, value: "foo")
-                ));
 
-            var exception = ThrownException?
-                    .InnerExceptions
-                    .FirstOrDefault(ex =>
-                        (ex as SprinklesException)?.TaskArgumentName == knownInvalidTaskNameProperty
-                    ) as SprinklesException;
+            RunCakeHost<InvalidTask>((knownInvalidTaskNameProperty, "foo"));
+
+            var exceptions = GetSprinklesExceptions();
+            Assert.That(exceptions, Is.Not.Null.And.Not.Empty);
+
+            var exception = exceptions.FirstOrDefault(ex => ex.TaskArgumentName == knownInvalidTaskNameProperty);
 
             Assert.That(exception, Is.Not.Null);
             Assert.That(exception.InnerMessage, Is.EqualTo(SprinklesValidator.Message_FlagMustBeBoolean));
@@ -65,16 +42,13 @@ namespace Cake.Sprinkles.Module.Tests
         public void ThrowsExceptionIfTaskArgumentFlagIsRequired()
         {
             var knownInvalidTaskNameProperty = nameof(InvalidTask.MyRequiredFlagProperty);
-            _host.Run(
-                FormatCustomArguments(
-                    (key: knownInvalidTaskNameProperty, value: "foo")
-                ));
 
-            var exception = ThrownException?
-                    .InnerExceptions
-                    .FirstOrDefault(ex =>
-                        (ex as SprinklesException)?.TaskArgumentName == knownInvalidTaskNameProperty
-                    ) as SprinklesException;
+            RunCakeHost<InvalidTask>((knownInvalidTaskNameProperty, "foo"));
+
+            var exceptions = GetSprinklesExceptions();
+            Assert.That(exceptions, Is.Not.Null.And.Not.Empty);
+
+            var exception = exceptions.FirstOrDefault(ex => ex.TaskArgumentName == knownInvalidTaskNameProperty);
 
             Assert.That(exception, Is.Not.Null);
             Assert.That(exception.InnerMessage, Is.EqualTo(SprinklesValidator.Message_FlagCannotBeRequired));
@@ -84,16 +58,13 @@ namespace Cake.Sprinkles.Module.Tests
         public void ThrowsExceptionIfTaskContainsFlagThatIsEnumerable()
         {
             var knownInvalidTaskNameProperty = nameof(InvalidTask.MyEnumerableFlagProperty);
-            _host.Run(
-                FormatCustomArguments(
-                    (key: knownInvalidTaskNameProperty, value: "foo")
-                ));
 
-            var exception = ThrownException?
-                    .InnerExceptions
-                    .FirstOrDefault(ex =>
-                        (ex as SprinklesException)?.TaskArgumentName == knownInvalidTaskNameProperty
-                    ) as SprinklesException;
+            RunCakeHost<InvalidTask>((knownInvalidTaskNameProperty, "foo"));
+
+            var exceptions = GetSprinklesExceptions();
+            Assert.That(exceptions, Is.Not.Null.And.Not.Empty);
+
+            var exception = exceptions.FirstOrDefault(ex => ex.TaskArgumentName == knownInvalidTaskNameProperty);
 
             Assert.That(exception, Is.Not.Null);
             Assert.That(exception.InnerMessage, Is.EqualTo(SprinklesValidator.Message_FlagMustNotBeEnumerable));
@@ -103,34 +74,32 @@ namespace Cake.Sprinkles.Module.Tests
         public void AddsDescriptionToRequiredArgument()
         {
             var knownInvalidTaskNameProperty = nameof(InvalidTask.MyRequiredProperty);
-            _host.Run(FormatCustomArguments());
 
-            var exception = ThrownException?
-                    .InnerExceptions
-                    .FirstOrDefault(ex =>
-                        (ex as SprinklesException)?.TaskArgumentName == knownInvalidTaskNameProperty
-                    ) as SprinklesException;
+            RunCakeHost<InvalidTask>();
+
+            var exceptions = GetSprinklesExceptions();
+            Assert.That(exceptions, Is.Not.Null.And.Not.Empty);
+
+            var exception = exceptions.FirstOrDefault(ex => ex.TaskArgumentName == knownInvalidTaskNameProperty);
 
             Assert.That(exception, Is.Not.Null);
             Assert.That(exception.TaskArgumentDescription, Is.EqualTo(InvalidTask.MyRequiredPropertyDescription));
             Assert.That(exception.Message, Does.Contain($"Description: {InvalidTask.MyRequiredPropertyDescription}"));
         }
-        
+
         [Test]
         public void ThrowsExceptionIfInputHasDelimiterAndMoreThanOneArgumentPassedIn()
         {
             var knownInvalidTaskNameProperty = nameof(InvalidTask.MyDelimiterProperty);
-            _host.Run(
-                FormatCustomArguments(
-                    (key: knownInvalidTaskNameProperty, value: "foo"),
-                    (key: knownInvalidTaskNameProperty, value: "bar")
-                ));
 
-            var exception = ThrownException?
-                    .InnerExceptions
-                    .FirstOrDefault(ex =>
-                        (ex as SprinklesException)?.TaskArgumentName == knownInvalidTaskNameProperty
-                    ) as SprinklesException;
+            RunCakeHost<InvalidTask>(
+                    (knownInvalidTaskNameProperty, "foo"),
+                    (knownInvalidTaskNameProperty, "bar")                    );
+
+            var exceptions = GetSprinklesExceptions();
+            Assert.That(exceptions, Is.Not.Null.And.Not.Empty);
+
+            var exception = exceptions.FirstOrDefault(ex => ex.TaskArgumentName == knownInvalidTaskNameProperty);
 
             Assert.That(exception, Is.Not.Null);
             Assert.That(exception.InnerMessage, Is.EqualTo(SprinklesValidator.Message_EnumerableDelimiterCannotHaveMoreThanOneArgument));
@@ -140,16 +109,15 @@ namespace Cake.Sprinkles.Module.Tests
         public void ThrowsExceptionIfDelimiterIsSetOnArgumentWithNoEnumeration()
         {
             var knownInvalidTaskNameProperty = nameof(InvalidTask.MyInvalidDelimiterProperty);
-            _host.Run(
-                FormatCustomArguments(
-                    (key: knownInvalidTaskNameProperty, value: "foo")
-                ));
 
-            var exception = ThrownException?
-                    .InnerExceptions
-                    .FirstOrDefault(ex =>
-                        (ex as SprinklesException)?.TaskArgumentName == knownInvalidTaskNameProperty
-                    ) as SprinklesException;
+            RunCakeHost<InvalidTask>(
+                    (knownInvalidTaskNameProperty, "foo"),
+                    (knownInvalidTaskNameProperty, "bar"));
+
+            var exceptions = GetSprinklesExceptions();
+            Assert.That(exceptions, Is.Not.Null.And.Not.Empty);
+
+            var exception = exceptions.FirstOrDefault(ex => ex.TaskArgumentName == knownInvalidTaskNameProperty);
 
             Assert.That(exception, Is.Not.Null);
             Assert.That(exception.InnerMessage, Is.EqualTo(SprinklesValidator.Message_EnumerableDelimiterMustImplementEnumerable));
@@ -159,16 +127,86 @@ namespace Cake.Sprinkles.Module.Tests
         public void ErrorThrownBySprinklesWithNoDescriptionHasNoDescriptionInMessage()
         {
             var knownInvalidTaskNameProperty = nameof(InvalidTask.MyInvalidEnumerableProperty);
-            _host.Run(FormatCustomArguments());
 
-            var exception = ThrownException?
-                    .InnerExceptions
-                    .FirstOrDefault(ex =>
-                        (ex as SprinklesException)?.TaskArgumentName == knownInvalidTaskNameProperty
-                    ) as SprinklesException;
+            RunCakeHost<InvalidTask>();
+
+            var exceptions = GetSprinklesExceptions();
+            Assert.That(exceptions, Is.Not.Null.And.Not.Empty);
+
+            var exception = exceptions.FirstOrDefault(ex => ex.TaskArgumentName == knownInvalidTaskNameProperty);
 
             Assert.That(exception, Is.Not.Null);
             Assert.That(exception.Message, Does.Not.Contain("Description:"));
+        }
+
+        [Test]
+        public void ThrowsErrorsIfArgumentAppearsOnMoreThanOneProperty()
+        {
+            var knownInvalidTaskNameProperty = nameof(InvalidTask.MyDuplicateArgumentName);
+
+            RunCakeHost<InvalidTask>();
+
+            var exceptions = GetSprinklesExceptions()?.Where(x => x.TaskArgumentName == knownInvalidTaskNameProperty)?.ToList();
+            Assert.That(exceptions, Is.Not.Null.And.Not.Empty);
+
+            Assert.That(exceptions.Count, Is.EqualTo(3));
+            
+            var firstDuplicateArgument = FilterSprinklesExceptionForProperty<InvalidTask>(exceptions, nameof(InvalidTask.ParentArgument));
+            Assert.That(firstDuplicateArgument?.InnerMessage, Is.EqualTo(SprinklesValidator.Message_ArgumentCannotAppearMoreThanOneTimeOnTask));
+
+            var secondDuplicateArgument = FilterSprinklesExceptionForProperty<ChildInvalidArguments>(exceptions, nameof(ChildInvalidArguments.ChildArgument));
+            Assert.That(secondDuplicateArgument?.InnerMessage, Is.EqualTo(SprinklesValidator.Message_ArgumentCannotAppearMoreThanOneTimeOnTask));
+
+            var thirdDuplicateArgument = FilterSprinklesExceptionForProperty<ChildInvalidArgumentsOneDeep>(exceptions, nameof(ChildInvalidArgumentsOneDeep.ChildArgument));
+            Assert.That(thirdDuplicateArgument?.InnerMessage, Is.EqualTo(SprinklesValidator.Message_ArgumentCannotAppearMoreThanOneTimeOnTask));
+        }
+
+        [Test(
+            Description = "The point of this test is so that we don't get an AggregateException as one of the InnerExceptions of an AggregateException. " +
+            "We flatten all the exceptions into a standard array.")]
+        public void ThrowsAggregateExceptionByAggregatingAllErrorsWhenUsingExternalArguments()
+        {
+            RunCakeHost<InvalidTask>();
+            var exceptions = GetSprinklesExceptions();
+            Assert.That(exceptions, Is.Not.Null.And.Not.Empty);
+            Assert.IsTrue(exceptions.Any(exception => exception.TaskArgumentName == nameof(ChildInvalidArguments.RequiredChildArgument)));
+            Assert.IsTrue(exceptions.Any(exception => exception.TaskArgumentName == nameof(ChildInvalidArguments.OtherRequiredChildArgument)));
+        }
+
+        [Test]
+        public void ThrowsExceptionIfExternalArgumentsHasAnyOtherTaskArgumentAttribute()
+        {
+            RunCakeHost<InvalidTask>();
+            var exception = GetSprinklesExceptionForProperty<InvalidTask>(nameof(InvalidTask.ParentInvalidChildArguments));
+            
+            Assert.That(exception?.InnerMessage, Is.EqualTo(SprinklesValidator.Message_TaskArgumentsCannotHaveDescriptors));
+        }
+
+        [Test]
+        public void ExternalTaskArgumentsClassWithoutParameterlessConstructorThrowsException()
+        {
+            RunCakeHost<InvalidTask>();
+            var exception = GetSprinklesExceptionForProperty<InvalidTask>(nameof(InvalidTask.ParameterConstructorClassChildArguments));
+
+            Assert.That(exception?.InnerMessage, Is.EqualTo(SprinklesValidator.Message_TaskArgumentsMustHaveParameterlessConstructor));
+        }
+
+        [Test]
+        public void ExternalTaskArgumentsStructThrowsException()
+        {
+            RunCakeHost<InvalidTask>();
+            var exception = GetSprinklesExceptionForProperty<InvalidTask>(nameof(InvalidTask.ParameterConstructorStructChildArguments));
+
+            Assert.That(exception?.InnerMessage, Is.EqualTo(SprinklesValidator.Message_StructNotSupported));
+        }
+
+        [Test]
+        public void ValidationNotAllowedOnFlags()
+        {
+            RunCakeHost<InvalidTask>();
+            var exception = GetSprinklesExceptionForProperty<InvalidTask>(nameof(InvalidTask.MyValidationFlagProperty));
+
+            Assert.That(exception?.InnerMessage, Is.EqualTo(SprinklesValidator.Message_FlagCannotBeValidated));
         }
     }
 }
