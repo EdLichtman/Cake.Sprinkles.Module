@@ -9,13 +9,13 @@ namespace Cake.Sprinkles.Module.TypeConversion
     [AttributeUsage(AttributeTargets.Property, AllowMultiple = false)]
     public class TaskArgumentConverterAttribute : Attribute
     {
-        public ITaskArgumentTypeConverter? Converter { get; }
+        public Type? ConverterType { get; }
 
         public TaskArgumentConverterAttribute(Type type)
         {
             if (type.IsAssignableTo(typeof(ITaskArgumentTypeConverter)))
             {
-                Converter = (ITaskArgumentTypeConverter)type;
+                ConverterType = type;
             }
         }
     }

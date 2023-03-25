@@ -7,6 +7,7 @@ using Cake.Sprinkles.Module.Tests.Models.StringTasks;
 using Cake.Sprinkles.Module.Tests.Models.TypeConversion;
 using Cake.Sprinkles.Module.Tests.Models.Validation;
 using Cake.Sprinkles.Module.TypeConversion;
+using Cake.Sprinkles.Module.Validation;
 using Microsoft.Extensions.DependencyInjection;
 using System;
 using System.Collections.Generic;
@@ -78,40 +79,90 @@ namespace Cake.Sprinkles.Module.Tests.DescriptionTests
             Assert.That(noArgumentsAvailableIndex, Is.GreaterThan(categorizedTaskDescriptionIndex));
         }
 
+        [Test]
+        public void DescriptionTaskWithOptionalAndRequiredDescriptionsDoesNotShowCertainDocumentation()
+        {
+            console = GetConsoleReader<DescriptionArgumentsTask>(true);
+
+            // Does not show Task Description header, because that's only if you don't include a target, to look at all tasks.
+            Assert.IsNull(console.GetIndex(RegexProvider.TaskDescriptionHeader, true));
+
+            // Does not show a row that contains a TaskName and a Description, since that's what you see with no target
+            Assert.IsNull(console.GetIndex(RegexProvider.GetNoTargetOutputForTask<NoArgumentTask>(), true));
+
+            // Does not show the Target Task Name for any other task, for example the NoArgumentTask.
+            Assert.IsNull(console.GetIndex(RegexProvider.GetTargetTaskName<NoArgumentTask>(), true));
+
+            // Does not show the Target Task Description for any other task, for example the NoArgument Task
+            Assert.IsNull(console.GetIndex(RegexProvider.GetTargetTaskDescription<NoArgumentTask>(), true));
+
+            // Does not tell you to run it again with --target, since you have already run it with target.
+            Assert.IsNull(console.GetIndex(RegexProvider.RunCommandWithTarget, true));
+
+            // Does not tell you there are no arguments available, since there are.
+            Assert.IsNull(console.GetIndex(RegexProvider.NoArgumentsAvailable, true));
+
+            // Does not include a line with only a * on it, suggesting that no argument has been added to that line.
+            Assert.IsNull(console.GetIndex(RegexProvider.GetArgument(string.Empty), true));
+
+            // Does not include the message suggesting there is a dependency tree, because for this target, there is no dependency tree.
+            Assert.IsNull(console.GetIndex(RegexProvider.DependencyTreeMessage, true));
+
+            // Does not get a message suggesting that there is some form of validator, since there are no validated arguments on this task.
+            Assert.IsNull(console.GetIndex(RegexProvider.GetValidates(".*"), true));
+
+            //Does not get any lines that say * Description: (empty description) since initially it did.
+            var emptyDescriptionsCount = console.GetIndices(RegexProvider.EmptyDescription).Count;
+            Assert.That(emptyDescriptionsCount, Is.EqualTo(0), $"Expected no empty descriptions, but found: {emptyDescriptionsCount}. Also, this is the format test.{{0}}");
+        }
+
+        [Test]
+        public void DescriptionShowsTaskOnLineBeforeDescription()
+        {
+            console = GetConsoleReader<DescriptionArgumentsTask>(true);
+            var categorizedTaskNameIndex = console.GetIndex(RegexProvider.GetTargetTaskName<DescriptionArgumentsTask>());
+            var categorizedTaskDescriptionIndex = console.GetIndex(RegexProvider.GetTargetTaskDescription<DescriptionArgumentsTask>());
+            Assert.That(categorizedTaskDescriptionIndex, Is.EqualTo(categorizedTaskNameIndex + 1));
+        }
+
+        [Test]
+        public void DescriptionShowsTaskDescriptionBeforeArguments()
+        {
+            console = GetConsoleReader<DescriptionArgumentsTask>(true);
+
+            var categorizedTaskDescriptionIndex = console.GetIndex(RegexProvider.GetTargetTaskDescription<DescriptionArgumentsTask>());
+            var requiredArgumentsHeaderIndex = console.GetIndex(RegexProvider.FollowingArgumentsRequired);
+
+            Assert.That(requiredArgumentsHeaderIndex, Is.GreaterThan(categorizedTaskDescriptionIndex));
+        }
+
+        [Test]
+        public void DescriptionWithRequiredAndOptionalValuesDisplaysRequiredValuesFirst()
+        {
+            console = GetConsoleReader<DescriptionArgumentsTask>(true);
+            // Get the index of the "following arguments" headers
+
+            // Validate the task, and that the description shows up as expected.
+            var categorizedTaskNameIndex = console.GetIndex(RegexProvider.GetTargetTaskName<DescriptionArgumentsTask>());
+
+            var requiredArgumentsHeaderIndex = console.GetIndex(RegexProvider.FollowingArgumentsRequired);
+            var optionalArgumentsHeaderIndex = console.GetIndex(RegexProvider.FollowingArgumentsOptional);
+
+            Assert.That(requiredArgumentsHeaderIndex, Is.GreaterThan(categorizedTaskNameIndex));
+            Assert.That(optionalArgumentsHeaderIndex, Is.GreaterThan(requiredArgumentsHeaderIndex));
+        }
+
+
         [Test(Description =
             "Tests should normally do only one thing, but the sheer definition of such a test, to make sure documentation " +
             "is stable, requires we break this rule. This is a bad example of a test, but a necessary one.")]
         public void DescriptionWithDescriptiveTargetBringsBackOnlyDescriptiveTarget()
         {
             console = GetConsoleReader<DescriptionArgumentsTask>(true);
-
-            // Not using Assert.Multiple because when we aggregate it, and there's an error, we can't see the stack trace and know where the error is.
-
-            // Validate the blacklist of lines for this task description.
-            Assert.IsNull(console.GetIndex(RegexProvider.TaskDescriptionHeader, true));
-            Assert.IsNull(console.GetIndex(RegexProvider.GetNoTargetOutputForTask<NoArgumentTask>(), true));
-            Assert.IsNull(console.GetIndex(RegexProvider.GetTargetTaskName<NoArgumentTask>(), true));
-            Assert.IsNull(console.GetIndex(RegexProvider.GetTargetTaskDescription<NoArgumentTask>(), true));
-            Assert.IsNull(console.GetIndex(RegexProvider.RunCommandWithTarget, true));
-            Assert.IsNull(console.GetIndex(RegexProvider.NoArgumentsAvailable, true));
-            Assert.IsNull(console.GetIndex(RegexProvider.GetArgument(string.Empty), true));
-            Assert.IsNull(console.GetIndex(RegexProvider.DependencyTreeMessage, true));
-            Assert.IsNull(console.GetIndex(RegexProvider.GetValidates(".*"), true));
-
-            var emptyDescriptionsCount = console.GetIndices(RegexProvider.EmptyDescription).Count;
-            Assert.That(emptyDescriptionsCount, Is.EqualTo(0), $"Expected no empty descriptions, but found: {emptyDescriptionsCount}. Also, this is the format test.{{0}}");
-
-            // Validate the task, and that the description shows up as expected.
-            var categorizedTaskNameIndex = console.GetIndex(RegexProvider.GetTargetTaskName<DescriptionArgumentsTask>());
-            var categorizedTaskDescriptionIndex = console.GetIndex(RegexProvider.GetTargetTaskDescription<DescriptionArgumentsTask>());
-            Assert.That(categorizedTaskDescriptionIndex, Is.EqualTo(categorizedTaskNameIndex + 1));
-
             // Get the index of the "following arguments" headers
-            var requiredArgumentsHeaderIndex = console.GetIndex(RegexProvider.FollowingArgumentsRequired);
+
             var optionalArgumentsHeaderIndex = console.GetIndex(RegexProvider.FollowingArgumentsOptional);
 
-            Assert.That(requiredArgumentsHeaderIndex, Is.GreaterThan(categorizedTaskDescriptionIndex));
-            Assert.That(optionalArgumentsHeaderIndex, Is.GreaterThan(requiredArgumentsHeaderIndex));
 
             // prepare regexes for sanity
             var requiredValue = nameof(DescriptionArgumentsTask.RequiredValue);
@@ -123,50 +174,6 @@ namespace Cake.Sprinkles.Module.Tests.DescriptionTests
             var usageValue = nameof(DescriptionArgumentsTask.UsageValue);
             var externalValue = nameof(DescriptionArguments.ExternalArgument);
             var externalValueChild = nameof(DescriptionArgumentsChild.ChildExternalArgument);
-            var enumValue = nameof(DescriptionArgumentsTask.DescriptionEnum);
-
-            // Check to make sure regexes are in the correct category: required or optional
-            console.ConfirmLineBetween(
-                requiredArgumentsHeaderIndex,
-                RegexProvider.GetArgument(requiredValue),
-                optionalArgumentsHeaderIndex);
-
-            console.ConfirmLineBetween(
-                requiredArgumentsHeaderIndex,
-                RegexProvider.GetArgument(externalValueChild),
-                optionalArgumentsHeaderIndex);
-
-            console.ConfirmLineBetween(
-                optionalArgumentsHeaderIndex,
-                RegexProvider.GetArgument(describedValue));
-
-            console.ConfirmLineBetween(
-                optionalArgumentsHeaderIndex,
-                RegexProvider.GetArgument(intValue));
-
-            console.ConfirmLineBetween(
-                optionalArgumentsHeaderIndex,
-                RegexProvider.GetArgument(flagValue));
-
-            console.ConfirmLineBetween(
-                optionalArgumentsHeaderIndex,
-                RegexProvider.GetArgument(enumerableValue));
-
-            console.ConfirmLineBetween(
-                optionalArgumentsHeaderIndex,
-                RegexProvider.GetArgument(delimiterValue));
-
-            console.ConfirmLineBetween(
-                optionalArgumentsHeaderIndex,
-                RegexProvider.GetArgument(usageValue));
-
-            console.ConfirmLineBetween(
-                optionalArgumentsHeaderIndex,
-                RegexProvider.GetArgument(externalValue));
-
-            console.ConfirmLineBetween(
-                optionalArgumentsHeaderIndex,
-                RegexProvider.GetArgument(enumValue));
 
             // Check to make sure each run is what we expect
             console.ConfirmRunContains(
@@ -213,12 +220,47 @@ namespace Cake.Sprinkles.Module.Tests.DescriptionTests
                 RegexProvider.GetArgument(externalValue),
                 RegexProvider.GetAcceptsType<DescriptionArguments>(externalValue));
 
+
+        }
+
+        [Test]
+        public void DescriptionOfRequiredArgumentIsInBetweenRequiredAndOptionalArguments()
+        {
+            console = GetConsoleReader<DescriptionArgumentsTask>(true);
+            var requiredArgumentsHeaderIndex = console.GetIndex(RegexProvider.FollowingArgumentsRequired);
+            var optionalArgumentsHeaderIndex = console.GetIndex(RegexProvider.FollowingArgumentsOptional);
+
+            var requiredValue = nameof(DescriptionArgumentsTask.RequiredValue);
+
+            console.ConfirmLineBetween(
+                requiredArgumentsHeaderIndex,
+                RegexProvider.GetArgument(requiredValue),
+                optionalArgumentsHeaderIndex);
+        }
+
+        [Test]
+        public void DescriptionOfOptionalArgumentIsInOptionalArguments()
+        {
+            console = GetConsoleReader<DescriptionArgumentsTask>(true);
+            var optionalArgumentsHeaderIndex = console.GetIndex(RegexProvider.FollowingArgumentsOptional);
+
+            var enumValue = nameof(DescriptionArgumentsTask.DescriptionEnum);
+
+            console.ConfirmLineBetween(
+                optionalArgumentsHeaderIndex,
+                RegexProvider.GetArgument(enumValue));
+        }
+
+        [Test] 
+        public void DescriptionOfEnumDisplaysAcceptedValues()
+        {
+            console = GetConsoleReader<DescriptionArgumentsTask>(true);
+            var enumValue = nameof(DescriptionArgumentsTask.DescriptionEnum);
             console.ConfirmRunContains(
                 RegexProvider.GetArgument(enumValue),
                 RegexProvider.GetAcceptsType<DescriptionArgumentsTask>(enumValue),
                 new Regex("^ *\\* " + DescriptionEnum.EnumOne + " *$"),
-                new Regex("^ *\\* " + DescriptionEnum.FightingMongooses + " *$")
-                );
+                new Regex("^ *\\* " + DescriptionEnum.FightingMongooses + " *$"));
         }
 
         [Test]
@@ -297,7 +339,8 @@ namespace Cake.Sprinkles.Module.Tests.DescriptionTests
             console = GetConsoleReader<TypeConverterTask>(true, 
                 (cakeHost) => cakeHost
                     .RegisterTypeConverter<TypeWithUsageConverter>()
-                    .RegisterTypeConverter<TypeWithoutUsageConverter>());
+                    .RegisterTypeConverter<TypeWithoutUsageConverter>()
+                    .RegisterTypeConverter<TypeWithUsageListConverter>());
 
             var runLines = new List<Regex?>
             {
@@ -320,7 +363,8 @@ namespace Cake.Sprinkles.Module.Tests.DescriptionTests
             console = GetConsoleReader<TypeConverterTask>(true,
                 (cakeHost) => cakeHost
                     .RegisterTypeConverter<TypeWithUsageConverter>()
-                    .RegisterTypeConverter<TypeWithoutUsageConverter>());
+                    .RegisterTypeConverter<TypeWithoutUsageConverter>()
+                    .RegisterTypeConverter<TypeWithUsageListConverter>());
 
             var runLines = new List<Regex?>
             {
@@ -343,21 +387,42 @@ namespace Cake.Sprinkles.Module.Tests.DescriptionTests
             console = GetConsoleReader<TypeConverterTask>(true,
                 (cakeHost) => cakeHost
                     .RegisterTypeConverter<TypeWithUsageConverter>()
-                    .RegisterTypeConverter<TypeWithoutUsageConverter>());
+                    .RegisterTypeConverter<TypeWithoutUsageConverter>()
+                    .RegisterTypeConverter<TypeWithUsageListConverter>());
 
             Assert.IsNull(console.GetIndex(RegexProvider.GetRawUsage($"--{nameof(TypeConverterTask.OtherConversionType)}=.*"), true));
         }
 
         [Test]
-        public void MultipleTaskConvertersWithNoSpecifiedUsageThrowsExceptionDuringDescription()
+        public void MultipleTaskConvertersWithNoneSpecifiedThrowsExceptionDuringDescription()
         {
-            throw new NotImplementedException();
+            console = GetConsoleReader<TypeConverterInvalidTask>(true,
+                host => host
+                    .RegisterTypeConverter<TypeWithUsageConverter>()
+                    .RegisterTypeConverter<TypeWithUsageOtherConverter>());
+
+            var compileErrorOccurredIndex = console.GetIndex(RegexProvider.CompileErrorOccurred);
+            var noConvertersSpecifiedRegex = new Regex("^" + SprinklesValidator.Message_ArgumentConverterMultipleMustHaveAnnotation + ".*");
+
+            console.ConfirmLineBetween(
+                compileErrorOccurredIndex,
+                noConvertersSpecifiedRegex);
         }
 
         [Test]
         public void TaskConverterAttributeWithInvalidTypeThrowsExceptionDuringDescription()
         {
-            throw new NotImplementedException();
+            console = GetConsoleReader<TypeConverterInvalidTask>(true,
+                host => host
+                    .RegisterTypeConverter<TypeWithUsageConverter>()
+                    .RegisterTypeConverter<TypeWithUsageOtherConverter>());
+
+            var compileErrorOccurredIndex = console.GetIndex(RegexProvider.CompileErrorOccurred);
+            var notValidTypeRegex = new Regex("^" + SprinklesValidator.Message_ArgumentConverterNotValid + ".*");
+
+            console.ConfirmLineBetween(
+                compileErrorOccurredIndex,
+                notValidTypeRegex);
         }
 
         private ConsoleReader GetConsoleReader<TTask>(bool includeTarget, params (string key, string? value)[] args) where TTask : IFrostingTask

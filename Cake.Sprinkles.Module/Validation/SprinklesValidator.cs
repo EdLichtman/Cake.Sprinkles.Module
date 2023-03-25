@@ -45,23 +45,50 @@ namespace Cake.Sprinkles.Module.Validation
 
             var isExternalArguments = SprinklesDecorations.IsExternalTaskArguments(property);
 
-            if (!isEnumeration)
+            var converters = _typeConverters.Where(x => x.ConversionType == property.PropertyType).ToList();
+            var hasConverter = converters.Any();
+            if (converters.Any())
             {
-                if (enumeratedType != null)
+                if (!SprinklesDecorations.IsArgumentConverterValid(property))
                 {
                     throw new SprinklesException(
                         property,
-                        Message_EnumerableMustImplementImmutableList);
-                }
-
-                if (hasDelimiter)
-                {
-                    throw new SprinklesException(
-                        property,
-                        Message_EnumerableDelimiterMustImplementEnumerable);
+                        Message_ArgumentConverterNotValid);
                 }
             }
 
+            if (converters.Count > 1)
+            {
+                var preferredConverter = SprinklesDecorations.GetArgumentConverter(property, _typeConverters);
+                if (preferredConverter == null)
+                {
+                    throw new SprinklesException(
+                        property,
+                        Message_ArgumentConverterMultipleMustHaveAnnotation);
+                }
+            }
+
+            if (!hasConverter)
+            {
+                if (!isEnumeration)
+                {
+                    if (enumeratedType != null)
+                    {
+                        throw new SprinklesException(
+                            property,
+                            Message_EnumerableMustImplementImmutableList,
+                            Message_BeSureToAddTypeConverter);
+                    }
+
+                    if (hasDelimiter)
+                    {
+                        throw new SprinklesException(
+                            property,
+                            Message_EnumerableDelimiterMustImplementEnumerable);
+                    }
+                }
+            }
+           
             if (isFlag)
             {
                 if (property.PropertyType != typeof(bool))
@@ -121,25 +148,6 @@ namespace Cake.Sprinkles.Module.Validation
                     throw new SprinklesException(
                         property,
                         Message_TaskArgumentsMustHaveParameterlessConstructor);
-                }
-            }
-
-            var converters = _typeConverters.Where(x => x.ConversionType == property.PropertyType).ToList();
-            if (converters.Count > 1)
-            {
-                if (!SprinklesDecorations.IsArgumentConverterValid(property))
-                {
-                    throw new SprinklesException(
-                        property,
-                        Message_ArgumentConverterNotValid);
-                }
-
-                var preferredConverter = SprinklesDecorations.GetArgumentConverter(property);
-                if (preferredConverter == null)
-                {
-                    throw new SprinklesException(
-                        property,
-                        Message_ArgumentConverterMultipleMustHaveAnnotation);
                 }
             }
         }

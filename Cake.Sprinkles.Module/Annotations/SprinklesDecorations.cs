@@ -177,12 +177,17 @@ namespace Cake.Sprinkles.Module.Annotations
             return new List<TaskArgumentValidationAttribute>();
         }
 
-        internal static ITaskArgumentTypeConverter? GetArgumentConverter(PropertyInfo propertyInfo)
+        internal static ITaskArgumentTypeConverter? GetArgumentConverter(PropertyInfo propertyInfo, IList<ITaskArgumentTypeConverter> converters)
         {
             var attr = propertyInfo.GetCustomAttribute(typeof(TaskArgumentConverterAttribute));
             if (attr != null)
             {
-                return ((TaskArgumentConverterAttribute)attr).Converter;
+                var type = ((TaskArgumentConverterAttribute)attr).ConverterType;
+                if (type != null)
+                {
+                    var converterTypes = converters.ToDictionary(x => x.GetType());
+                    return converterTypes.ContainsKey(type) ? converterTypes[type] : null;
+                }
             }
 
             return null;
@@ -193,7 +198,7 @@ namespace Cake.Sprinkles.Module.Annotations
             var attr = propertyInfo.GetCustomAttribute(typeof(TaskArgumentConverterAttribute));
             if (attr != null)
             {
-                return ((TaskArgumentConverterAttribute)attr).Converter != null;
+                return ((TaskArgumentConverterAttribute)attr).ConverterType != null;
             }
 
             return true;

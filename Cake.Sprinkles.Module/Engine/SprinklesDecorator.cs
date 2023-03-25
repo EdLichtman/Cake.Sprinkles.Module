@@ -206,7 +206,7 @@ namespace Cake.Sprinkles.Module.Engine
             var converters = _typeConverters.Where(x => x.ConversionType == argument.Type).ToList();
             if (converters.Count > 1)
             {
-                var preferredConverter = SprinklesDecorations.GetArgumentConverter(argument.Property);
+                var preferredConverter = SprinklesDecorations.GetArgumentConverter(argument.Property, _typeConverters);
                 result = preferredConverter?.Convert(argument);
             } 
             else {
