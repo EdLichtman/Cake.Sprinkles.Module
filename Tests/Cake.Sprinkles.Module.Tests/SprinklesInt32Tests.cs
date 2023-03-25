@@ -1,150 +1,278 @@
 ﻿using Cake.Frosting;
 using Cake.Sprinkles.Module.Tests.Models;
-using Cake.Sprinkles.Module.Tests.Models.Int32;
+using Cake.Sprinkles.Module.Tests.Models.Int32Tasks;
+using Cake.Sprinkles.Module.Tests.Models.StringTasks;
+using Cake.Sprinkles.Module.Validation;
+using NuGet.Packaging;
 
 namespace Cake.Sprinkles.Module.Tests
 {
     [TestFixture]
     internal class SprinklesInt32Tests : SprinklesTestBase
     {
-        private CakeHost _host = null!;
-        private Int32Task? Context => (SprinklesTestContextProvider.Context as SprinklesTestContext<Int32Task>)?.Task;
-        private Exception? ThrownException => SprinklesTestContextProvider.ThrownException;
-
-        [SetUp]
-        public void SetUp()
+        private IList<string> RequiredArguments = new List<string>
         {
-            _host = GetCakeHost<Int32Task>();
+                nameof(Int32RequiredTask.Single),
+                nameof(Int32RequiredTask.List),
+                nameof(Int32RequiredTask.HashSet)
+        };
+
+        private IList<string> OptionalArguments = new List<string>
+        {
+                nameof(Int32OptionalTask.Single),
+                nameof(Int32OptionalTask.List),
+                nameof(Int32OptionalTask.HashSet)
+        };
+
+        private IList<string> ExternalArguments = new List<string>
+        {
+            nameof(Int32ExternalArgumentsTask.Single),
+            nameof(Int32ExternalArguments.ExternalRequiredSingle),
+            nameof(Int32ExternalArguments.ExternalRequiredList),
+            nameof(Int32ExternalArguments.ExternalRequiredHashSet),
+            nameof(Int32ExternalArguments.ExternalOptionalSingle),
+            nameof(Int32ExternalArguments.ExternalOptionalList),
+            nameof(Int32ExternalArguments.ExternalOptionalHashSet)
+        };
+
+        private IList<string> ExternalRequiredArguments = new List<string>
+        {
+            nameof(Int32ExternalArguments.ExternalRequiredSingle),
+            nameof(Int32ExternalArguments.ExternalRequiredList),
+            nameof(Int32ExternalArguments.ExternalRequiredHashSet),
+        };
+
+        private IList<int> ArgumentValues = new List<int>
+        {
+            1,2,3
+        };
+
+        [Test]
+        public void ThrowsErrorOnRequiredPropertiesIfCastingIsInvalid()
+        {
+            var properties = PrepareArguments(RequiredArguments.Select(x => (x, "foo")));
+            var result = GetCakeHost<Int32RequiredTask>().Run(FormatCustomArguments(nameof(Int32RequiredTask), properties));
+
+            Assert.That(result, Is.EqualTo(-1), "Task succeeded when it should have failed.");
+
+            var exceptions = GetSprinklesExceptions();
+            Assert.That(exceptions, Is.Not.Null.Or.Empty);
+            Assert.Multiple(() =>
+            {
+                foreach(var expectedArgument in RequiredArguments)
+                {
+                    var exception = exceptions.FirstOrDefault(x => x.TaskArgumentName == expectedArgument);
+                    Assert.That(exception?.InnerMessage, Is.EqualTo(SprinklesValidator.Message_ArgumentWasNotAValidValueForType));
+                    Assert.That(exception?.Message, Does.Contain("Type: Int32"));
+                }
+            });
         }
 
         [Test]
-        public void ThrowsErrorIfCastingIsInvalid()
+        public void ThrowsErrorOnOptionalPropertiesIfCastingIsInvalid()
         {
-            var properties = GetAllPropertiesAsStrings();
-            var result = _host.Run(properties);
+            var properties = PrepareArguments(OptionalArguments.Select(x => (x, "foo")));
+            var result = GetCakeHost<Int32OptionalTask>().Run(FormatCustomArguments(nameof(Int32OptionalTask), properties));
 
-            Assert.That(result, Is.EqualTo(-1), "Int32Task succeeded when it should have failed.");
+            Assert.That(result, Is.EqualTo(-1), "Task succeeded when it should have failed.");
 
-            var exception = ThrownException;
-            Assert.That(exception, Is.Not.Null);
+            var exceptions = GetSprinklesExceptions();
+            Assert.That(exceptions, Is.Not.Null.Or.Empty);
             Assert.Multiple(() =>
             {
-                Assert.That(exception!.Message, Does.Contain("is not a valid value for Int32. (Parameter 'required_single')"));
-                Assert.That(exception.Message, Does.Contain("is not a valid value for Int32. (Parameter 'required_list')"));
-                Assert.That(exception.Message, Does.Contain("is not a valid value for Int32. (Parameter 'required_hashset')"));
-                Assert.That(exception.Message, Does.Contain("is not a valid value for Int32. (Parameter 'optional_single')"));
-                Assert.That(exception.Message, Does.Contain("is not a valid value for Int32. (Parameter 'optional_list')"));
-                Assert.That(exception.Message, Does.Contain("is not a valid value for Int32. (Parameter 'optional_hashset')"));
+                foreach (var expectedArgument in OptionalArguments)
+                {
+                    var exception = exceptions.FirstOrDefault(x => x.TaskArgumentName == expectedArgument);
+                    Assert.That(exception?.InnerMessage, Is.EqualTo(SprinklesValidator.Message_ArgumentWasNotAValidValueForType));
+                    Assert.That(exception?.Message, Does.Contain("Type: Int32"));
+                }
             });
         }
 
         [Test]
         public void CanRequireMultipleArguments()
         {
-            var result = _host.Run(new String[] { });
+            var result = GetCakeHost<Int32RequiredTask>().Run(FormatCustomArguments(nameof(Int32RequiredTask)));
 
-            Assert.That(result, Is.EqualTo(-1), "Int32Task succeeded when it should have failed.");
+            Assert.That(result, Is.EqualTo(-1), "Task succeeded when it should have failed.");
 
-            var exception = ThrownException;
-            Assert.That(exception, Is.Not.Null);
+            var exceptions = GetSprinklesExceptions();
+            Assert.That(exceptions, Is.Not.Null.Or.Empty);
             Assert.Multiple(() =>
             {
-                Assert.That(exception!.Message, Does.Contain("Argument 'required_single' was not set."));
-                Assert.That(exception.Message, Does.Contain("Argument 'required_list' was not set."));
-                Assert.That(exception.Message, Does.Contain("Argument 'required_hashset' was not set."));
+                foreach (var expectedArgument in RequiredArguments)
+                {
+                    var exception = exceptions.FirstOrDefault(x => x.TaskArgumentName == expectedArgument);
+                    Assert.That(exception?.InnerMessage, Is.EqualTo(SprinklesValidator.Message_ArgumentWasNotSet));
+                }
             });
         }
 
         [Test]
-        public void CanDecorateRequiredSingle()
+        public void CanDecorateRequiredSingleWithLastValue()
         {
-            var arguments = GetAllPropertiesAsNumbers();
-            var result = _host.Run(arguments);
+            var properties = PrepareArguments(RequiredArguments.SelectMany(x => ArgumentValues, (arg, value) => (arg, value.ToString())));
+            var result = GetCakeHost<Int32RequiredTask>().Run(FormatCustomArguments(nameof(Int32RequiredTask), properties));
 
-            Assert.That(result, Is.EqualTo(0), "Int32Task failed.");
-
-            var lastRequiredValue = Int32.Parse(arguments.Last(x => x.Contains("required_single")).Split("=")[1]);
-
-            Assert.That(Context?.RequiredSingle, Is.EqualTo(lastRequiredValue));
+            Assert.That(result, Is.EqualTo(0), "Task failed.");
+            Assert.That(GetContext<Int32RequiredTask>()?.Single, Is.EqualTo(ArgumentValues.Last()));
         }
 
         [Test]
         public void CanDecorateRequiredList()
         {
-            var arguments = GetAllPropertiesAsNumbers();
-            var result = _host.Run(arguments);
+            var properties = PrepareArguments(RequiredArguments.SelectMany(x => ArgumentValues, (arg, value) => (arg, value.ToString())));
+            var result = GetCakeHost<Int32RequiredTask>().Run(FormatCustomArguments(nameof(Int32RequiredTask), properties));
 
-            Assert.That(result, Is.EqualTo(0), "Int32Task failed.");
-
-            var requiredValues = arguments.Where(x => x.Contains("required_list")).Select(x => Int32.Parse(x.Split("=")[1])).ToList();
-
-            Assert.That(Context?.RequiredList, Is.EqualTo(requiredValues));
+            Assert.That(result, Is.EqualTo(0), "Task failed.");
+            Assert.That(GetContext<Int32RequiredTask>()?.List, Is.EqualTo(ArgumentValues));
         }
 
         [Test]
         public void CanDecorateRequiredHashSet()
         {
-            var arguments = GetAllPropertiesAsNumbers();
-            var result = _host.Run(arguments);
+            var properties = PrepareArguments(RequiredArguments.SelectMany(x => ArgumentValues, (arg, value) => (arg, value.ToString())));
+            var result = GetCakeHost<Int32RequiredTask>().Run(FormatCustomArguments(nameof(Int32RequiredTask), properties));
 
-            Assert.That(result, Is.EqualTo(0), "Int32Task failed.");
-
-            var requiredValues =
-                arguments
-                    .Where(x => x.Contains("required_hashset"))
-                    .Select(x => Int32.Parse(x.Split("=")[1]))
-                    .OrderBy(x => x)
-                    .ToList();
-
-            Assert.That(Context?.RequiredHashSet.OrderBy(x => x).ToList(), Is.EqualTo(requiredValues));
+            Assert.That(result, Is.EqualTo(0), "Task failed.");
+            Assert.That(GetContext<Int32RequiredTask>()?.List, Is.EqualTo(ArgumentValues));
         }
 
         [Test]
         public void CanDecorateOptionalSingle()
         {
-            var arguments = GetAllPropertiesAsNumbers();
-            var result = _host.Run(arguments);
+            var properties = PrepareArguments(OptionalArguments.SelectMany(x => ArgumentValues, (arg, value) => (arg, value.ToString())));
+            var result = GetCakeHost<Int32OptionalTask>().Run(FormatCustomArguments(nameof(Int32OptionalTask), properties));
 
-            Assert.That(result, Is.EqualTo(0), "Int32Task failed.");
-
-            var lastValue = Int32.Parse(arguments.Last(x => x.Contains("optional_single")).Split("=")[1]);
-
-            Assert.That(Context?.OptionalSingle, Is.EqualTo(lastValue));
+            Assert.That(result, Is.EqualTo(0), "Task failed.");
+            Assert.That(GetContext<Int32OptionalTask>()?.Single, Is.EqualTo(ArgumentValues.Last()));
         }
 
         [Test]
         public void CanDecorateOptionalList()
         {
-            var arguments = GetAllPropertiesAsNumbers();
-            var result = _host.Run(arguments);
+            var properties = PrepareArguments(OptionalArguments.SelectMany(x => ArgumentValues, (arg, value) => (arg, value.ToString())));
+            var result = GetCakeHost<Int32OptionalTask>().Run(FormatCustomArguments(nameof(Int32OptionalTask), properties));
 
-            Assert.That(result, Is.EqualTo(0), "Int32Task failed.");
-
-            var values = 
-                arguments
-                    .Where(x => x.Contains("optional_list"))
-                    .Select(x => Int32.Parse(x.Split("=")[1]))
-                    .ToList();
-
-            Assert.That(Context?.OptionalList, Is.EqualTo(values));
+            Assert.That(result, Is.EqualTo(0), "Task failed.");
+            Assert.That(GetContext<Int32OptionalTask>()?.List, Is.EqualTo(ArgumentValues));
         }
 
         [Test]
         public void CanDecorateOptionalHashSet()
         {
-            var arguments = GetAllPropertiesAsNumbers();
-            var result = _host.Run(arguments);
+            var properties = PrepareArguments(OptionalArguments.SelectMany(x => ArgumentValues, (arg, value) => (arg, value.ToString())));
+            var result = GetCakeHost<Int32OptionalTask>().Run(FormatCustomArguments(nameof(Int32OptionalTask), properties));
 
-            Assert.That(result, Is.EqualTo(0), "Int32Task failed.");
+            Assert.That(result, Is.EqualTo(0), "Task failed.");
+            Assert.That(GetContext<Int32OptionalTask>()?.List, Is.EqualTo(ArgumentValues));
+        }
 
-            var values =
-                arguments
-                    .Where(x => x.Contains("optional_hashset"))
-                    .Select(x => Int32.Parse(x.Split("=")[1]))
-                    .OrderBy(x => x)
-                    .ToList();
+        [Test]
+        public void CanInstantiateNullOptionalList()
+        {
+            var result = GetCakeHost<Int32OptionalTask>().Run(FormatCustomArguments(nameof(Int32OptionalTask)));
 
-            Assert.That(Context?.OptionalHashSet.OrderBy(x => x).ToList(), Is.EqualTo(values));
+            Assert.That(result, Is.EqualTo(0), "Task failed.");
+            Assert.That(GetContext<Int32OptionalTask>()?.List, Is.Not.Null);
+        }
+
+        [Test]
+        public void CanInstantiateNullOptionalHashSet()
+        {
+            var result = GetCakeHost<Int32OptionalTask>().Run(FormatCustomArguments(nameof(Int32OptionalTask)));
+
+            Assert.That(result, Is.EqualTo(0), "Task failed.");
+            Assert.That(GetContext<Int32OptionalTask>()?.HashSet, Is.Not.Null);
+        }
+
+        [Test]
+        public void CanRequireExternalArguments()
+        {
+            var result = GetCakeHost<Int32ExternalArgumentsTask>().Run(FormatCustomArguments(nameof(Int32ExternalArgumentsTask)));
+
+            Assert.That(result, Is.EqualTo(-1), "Task succeeded when it should have failed.");
+
+            var exceptions = GetSprinklesExceptions();
+            Assert.That(exceptions, Is.Not.Null.Or.Empty);
+            Assert.Multiple(() =>
+            {
+                foreach (var expectedArgument in ExternalRequiredArguments)
+                {
+                    var exception = exceptions.FirstOrDefault(x => x.TaskArgumentName == expectedArgument);
+                    Assert.That(exception?.InnerMessage, Is.EqualTo(SprinklesValidator.Message_ArgumentWasNotSet));
+                }
+            });
+        }
+
+        [Test]
+        public void CanDecorateInternalArgumentsAlongsideExternalArguments()
+        {
+            var properties = PrepareArguments(ExternalArguments.SelectMany(x => ArgumentValues, (arg, value) => (arg, value.ToString())));
+            var result = GetCakeHost<Int32ExternalArgumentsTask>().Run(FormatCustomArguments(nameof(Int32ExternalArgumentsTask), properties));
+
+            Assert.That(result, Is.EqualTo(0), "Task failed.");
+            Assert.That(GetContext<Int32ExternalArgumentsTask>()?.Single, Is.EqualTo(ArgumentValues.Last()));
+        }
+
+        [Test]
+        public void CanDecorateExternalRequiredSingleWithLastValue()
+        {
+            var properties = PrepareArguments(ExternalArguments.SelectMany(x => ArgumentValues, (arg, value) => (arg, value.ToString())));
+            var result = GetCakeHost<Int32ExternalArgumentsTask>().Run(FormatCustomArguments(nameof(Int32ExternalArgumentsTask), properties));
+
+            Assert.That(result, Is.EqualTo(0), "Task failed.");
+            Assert.That(GetContext<Int32ExternalArgumentsTask>()?.ExternalArguments.ExternalRequiredSingle, Is.EqualTo(ArgumentValues.Last()));
+        }
+
+        [Test]
+        public void CanDecorateExternalRequiredList()
+        {
+            var properties = PrepareArguments(ExternalArguments.SelectMany(x => ArgumentValues, (arg, value) => (arg, value.ToString())));
+            var result = GetCakeHost<Int32ExternalArgumentsTask>().Run(FormatCustomArguments(nameof(Int32ExternalArgumentsTask), properties));
+
+            Assert.That(result, Is.EqualTo(0), "Task failed.");
+            Assert.That(GetContext<Int32ExternalArgumentsTask>()?.ExternalArguments.ExternalRequiredList, Is.EqualTo(ArgumentValues));
+        }
+
+        [Test]
+        public void CanDecorateExternalRequiredHashSet()
+        {
+            var properties = PrepareArguments(ExternalArguments.SelectMany(x => ArgumentValues, (arg, value) => (arg, value.ToString())));
+            var result = GetCakeHost<Int32ExternalArgumentsTask>().Run(FormatCustomArguments(nameof(Int32ExternalArgumentsTask), properties));
+
+            Assert.That(result, Is.EqualTo(0), "Task failed.");
+            Assert.That(GetContext<Int32ExternalArgumentsTask>()?.ExternalArguments.ExternalRequiredHashSet, Is.EqualTo(ArgumentValues));
+        }
+
+        [Test]
+        public void CanDecorateExternalOptionalSingleWithLastValue()
+        {
+            var properties = PrepareArguments(ExternalArguments.SelectMany(x => ArgumentValues, (arg, value) => (arg, value.ToString())));
+            var result = GetCakeHost<Int32ExternalArgumentsTask>().Run(FormatCustomArguments(nameof(Int32ExternalArgumentsTask), properties));
+
+            Assert.That(result, Is.EqualTo(0), "Task failed.");
+            Assert.That(GetContext<Int32ExternalArgumentsTask>()?.ExternalArguments.ExternalOptionalSingle, Is.EqualTo(ArgumentValues.Last()));
+        }
+
+        [Test]
+        public void CanDecorateExternalOptionalList()
+        {
+            var properties = PrepareArguments(ExternalArguments.SelectMany(x => ArgumentValues, (arg, value) => (arg, value.ToString())));
+            var result = GetCakeHost<Int32ExternalArgumentsTask>().Run(FormatCustomArguments(nameof(Int32ExternalArgumentsTask), properties));
+
+            Assert.That(result, Is.EqualTo(0), "Task failed.");
+            Assert.That(GetContext<Int32ExternalArgumentsTask>()?.ExternalArguments.ExternalOptionalList, Is.EqualTo(ArgumentValues));
+        }
+
+        [Test]
+        public void CanDecorateExternalOptionalHashSet()
+        {
+            var properties = PrepareArguments(ExternalArguments.SelectMany(x => ArgumentValues, (arg, value) => (arg, value.ToString())));
+            var result = GetCakeHost<Int32ExternalArgumentsTask>().Run(FormatCustomArguments(nameof(Int32ExternalArgumentsTask), properties));
+
+            Assert.That(result, Is.EqualTo(0), "Task failed.");
+            Assert.That(GetContext<Int32ExternalArgumentsTask>()?.ExternalArguments.ExternalOptionalHashSet, Is.EqualTo(ArgumentValues));
         }
     }
 }

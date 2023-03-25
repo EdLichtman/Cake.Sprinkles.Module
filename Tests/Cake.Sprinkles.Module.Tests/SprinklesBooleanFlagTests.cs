@@ -1,7 +1,5 @@
 ﻿using Cake.Frosting;
-using Cake.Sprinkles.Module.Tests.Models;
 using Cake.Sprinkles.Module.Tests.Models.BooleanTasks;
-using Cake.Sprinkles.Module.Tests.Models.Int32;
 
 namespace Cake.Sprinkles.Module.Tests
 {
@@ -9,7 +7,7 @@ namespace Cake.Sprinkles.Module.Tests
     internal class SprinklesBooleanFlagTests : SprinklesTestBase
     {
         private CakeHost _host = null!;
-        private BoolFlagTask? Context => (SprinklesTestContextProvider.Context as SprinklesTestContext<BoolFlagTask>)?.Task;
+        private BoolFlagTask? Context => GetContext<BoolFlagTask>();
 
         [SetUp]
         public void SetUp()
@@ -20,11 +18,11 @@ namespace Cake.Sprinkles.Module.Tests
         [Test]
         public void CanPopulateBooleanViaFlag()
         {
-            var result = _host.Run(new[]
-            {
-                "--target=Flag",
-                "--flag"
-            });
+            var result = _host.Run(
+                FormatCustomArguments(
+                    nameof(BoolFlagTask), 
+                    (nameof(BoolFlagTask.HasArgument), null))
+                );
 
             Assert.That(result, Is.EqualTo(0), "BooleanTask failed.");
 
@@ -34,10 +32,10 @@ namespace Cake.Sprinkles.Module.Tests
         [Test]
         public void CanDecorateByNotIncludingFlag()
         {
-            var result = _host.Run(new[]
-            {
-                "--target=Flag",
-            });
+            var result = _host.Run(
+                 FormatCustomArguments(
+                    nameof(BoolFlagTask))
+                );
 
             Assert.That(result, Is.EqualTo(0), "BooleanTask failed.");
 
@@ -47,11 +45,11 @@ namespace Cake.Sprinkles.Module.Tests
         [Test]
         public void CanForceFlagToBeFalse()
         {
-            var result = _host.Run(new[]
-            {
-                "--target=Flag",
-                "--flag=false"
-            });
+            var result = _host.Run(
+                FormatCustomArguments(
+                    nameof(BoolFlagTask),
+                    (nameof(BoolFlagTask.HasArgument), false.ToString()))
+                );
 
             Assert.That(result, Is.EqualTo(0), "BooleanTask failed.");
 

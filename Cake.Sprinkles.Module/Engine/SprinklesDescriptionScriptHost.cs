@@ -1,25 +1,44 @@
 ﻿using System.Reflection;
-using System.Threading.Tasks;
 using Cake.Cli;
 using Cake.Core;
 using Cake.Frosting;
 using Cake.Sprinkles.Module.Annotations;
+using Cake.Sprinkles.Module.TypeConversion;
+using Cake.Sprinkles.Module.Validation;
+using Cake.Sprinkles.Module.Validation.Exceptions;
+using NuGet.Packaging;
 using Spectre.Console;
 
 namespace Cake.Sprinkles.Module.Engine
 {
     internal class SprinklesDescriptionScriptHost : DescriptionScriptHost
     {
-
+        private const string Message_FixErrorsFirst = "Error(s) occurred during compilation. Please fix the task before you can run this tool.";
+        private const string Message_ThereAreDependencies = "This task has one or more dependencies. Run the dependency tree tool (--tree) to discover those dependencies, and then run the description tool (--description) while specifying target (-t,--target) as one of those dependencies to describe the allowed arguments for that dependency.";
+        private const string Message_RunCommandWithTargetForArguments = "Run this command while specifying target (-t,--target) to describe the allowed arguments.";
+        private readonly IEnumerable<ITaskArgumentTypeConverter> _taskArgumentTypeConverters;
         private readonly IConsole _console;
-        private readonly Dictionary<string, string> _descriptions;
-        private readonly IDictionary<string, IFrostingTask> _tasks;
+        private readonly SprinklesTaskDescriptors _taskDescriptors;
+        private readonly SprinklesValidator _validator;
+        private readonly SprinklesArgumentsProvider _argumentsProvider;
+        private readonly int _maxTaskNameLength;
 
-        public SprinklesDescriptionScriptHost(ICakeEngine engine, ICakeContext context, IConsole console, IEnumerable<IFrostingTask> tasks) : base(engine, context, console)
+        public SprinklesDescriptionScriptHost(
+            ICakeEngine engine, 
+            ICakeContext context, 
+            IConsole console, 
+            SprinklesTaskDescriptors tasks, 
+            IEnumerable<ITaskArgumentTypeConverter> taskArgumentTypeConverters,
+            SprinklesValidator validator,
+            SprinklesArgumentsProvider argumentsProvider) 
+            : base(engine, context, console)
         {
+            _taskArgumentTypeConverters = taskArgumentTypeConverters;
             _console = console ?? throw new ArgumentNullException(nameof(console));
-            _descriptions = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
-            _tasks = tasks.ToDictionary(SprinklesDecorations.GetTaskName);
+            _taskDescriptors = tasks;
+            _validator = validator;
+            _argumentsProvider = argumentsProvider;
+            _maxTaskNameLength = GetMaxTaskNameLength();
         }
 
         public override Task<CakeReport> RunTargetAsync(string target)
@@ -46,86 +65,49 @@ namespace Cake.Sprinkles.Module.Engine
                 targets = new String[0];
             }
 
-            var maxTaskNameLength = 29;
-
-            foreach (var task in _tasks.Keys)
+            if (targets.Length == 0)
             {
-                if (task.Length > maxTaskNameLength)
-                {
-                    maxTaskNameLength = task.Length;
-                }
-
-                _descriptions.Add(task, SprinklesDecorations.GetTaskDescription(_tasks[task]));
-            }
-
-            maxTaskNameLength++;
-
-            _console.WriteLine();
-            _console.WriteLine(GetTaskDescriptionPrintout(maxTaskNameLength, "Task", "Description"));
-            _console.WriteLine(GetSectionBreak(maxTaskNameLength));
-            var taskNames = _tasks.Keys;
-            if (targets.Any())
+                PrintAllDescriptions();
+            } 
+            else
             {
-                taskNames = _tasks.Keys.Intersect(targets).ToList();
-            }
-
-            foreach (var taskName in taskNames)
-            {
-                _console.WriteLine(GetTaskDescriptionPrintout(maxTaskNameLength, taskName, _descriptions[taskName]));
-                if (targets.Any())
-                {
-                    _console.WriteLine();
-                    PrintTaskArguments(maxTaskNameLength, targets);
-                }
-
-                var taskDescriptor = Engine.Tasks.FirstOrDefault(task => task.Name == taskName);
-
-                if (taskDescriptor?.Dependencies.Count > 0)
-                {
-
-                    _console.WriteLine($"Task: '{taskName}' is dependent other tasks. Run --description targeting any of these for more information:", Color.Yellow3_1);
-                    _console.WriteLine();
-                    _console.WriteLine(GetTaskDescriptionPrintout(maxTaskNameLength, "Task", "Required"));
-                    _console.WriteLine(GetSectionBreak(maxTaskNameLength));
-                    foreach (var dependency in taskDescriptor.Dependencies)
-                    {
-                        _console.WriteLine(GetTaskDescriptionPrintout(maxTaskNameLength, dependency.Name,
-                            dependency.Required.ToString()));
-                    }
-                }
-            }
-
-            
-
-            if (targets.Any())
-            {
-                var unrecognizedTargets = targets.Except(_tasks.Keys).ToList();
+                var unrecognizedTargets = targets.Except(_taskDescriptors.Discovered.Select(x => x.name)).ToList();
                 if (unrecognizedTargets.Any())
                 {
                     _console.WriteLine();
                     _console.WriteLine("Unrecognized Targets");
-                    _console.WriteLine(GetSectionBreak(maxTaskNameLength));
+                    _console.WriteLine(GetSectionBreak());
                     foreach (var target in unrecognizedTargets)
                     {
                         _console.WriteLine(target);
                     }
+                } 
+                else
+                {
+                    PrintTaskArguments(targets);
                 }
                 _console.WriteLine();
-
-                return;
             }
-            
+        }
 
+        private void PrintAllDescriptions()
+        {
             _console.WriteLine();
-            _console.WriteLine(GetSectionBreak(maxTaskNameLength));
-            _console.WriteLine("Run this command while specifying target (-t,--target) to describe the allowed arguments.");
+            _console.WriteLine(GetTaskDescriptionPrintout("Task", "Description"));
+            _console.WriteLine(GetSectionBreak());
+            _console.WriteLine();
+            foreach(var descriptor in _taskDescriptors.Discovered)
+            {
+                _console.WriteLine(GetTaskDescriptionPrintout(descriptor.name, descriptor.description));
+            }
+
+            _console.WriteLine(GetSectionBreak());
+            _console.WriteLine(Message_RunCommandWithTargetForArguments);
             _console.WriteLine();
         }
 
-        private void PrintTaskArguments(Int32 maxTaskNameLength, IList<string> targets)
+        private void PrintTaskArguments(IList<string> targets)
         {
-            _console.WriteLine("Arguments");
-            _console.WriteLine(GetSectionBreak(maxTaskNameLength));
             foreach (var target in targets)
             {
                 PrintTaskArguments(target);
@@ -134,87 +116,203 @@ namespace Cake.Sprinkles.Module.Engine
 
         private void PrintTaskArguments(string target)
         {
-            if (!_tasks.TryGetValue(target, out var task))
-            {
-                throw new CakeException(
-                    $"Task not found: {target}.");
-            }
+            var descriptor = _taskDescriptors.Discovered.First(x => x.name == target);
 
             _console.ForegroundColor = Color.Yellow;
             _console.WriteLine($"Task: {target}");
             _console.ResetColor();
-            _console.WriteLine($"Description: {SprinklesDecorations.GetTaskDescription(task)}");
+            _console.WriteLine($"Description: {descriptor.description}");
             _console.WriteLine();
-            var properties = task.GetType().GetProperties().Where(SprinklesDecorations.IsTaskArgument).ToList();
+
+            var exceptions = new List<SprinklesException>();
+            var argumentsOfTask = _argumentsProvider.GetAllArguments(descriptor.task, exceptions);
+            
+            var properties = argumentsOfTask
+                .Select(x => x.property)
+                .ToList();
 
             if (!properties.Any())
             {
-                _console.WriteLine("No Properties available.");
+                _console.WriteLine("No Arguments available.");
                 _console.WriteLine();
+            }
+
+            if (!ValidatePropertiesInfo(properties, exceptions))
+            {
+                return;
             }
 
             var requiredProperties = properties.Where(SprinklesDecorations.IsRequired).ToList();
             if (requiredProperties.Any())
             {
-                _console.WriteLine("The following properties are required:");
+                _console.WriteLine("The following arguments are required:");
                 AppendPropertiesInfo(requiredProperties);
-                _console.WriteLine();
             }
 
             var optionalProperties = properties.Except(requiredProperties).ToList();
             if (optionalProperties.Any())
             {
-                _console.WriteLine("The following properties are optional:");
+                _console.WriteLine("The following arguments are optional:");
                 AppendPropertiesInfo(optionalProperties);
-                _console.WriteLine();
             }
+
+            var taskDescriptor = Engine.Tasks.FirstOrDefault(task => task.Name == target);
+
+            if (taskDescriptor?.Dependencies.Count > 0)
+            {
+                _console.WriteLine();
+                _console.WriteLine(Message_ThereAreDependencies);
+            }
+        }
+
+        private bool ValidatePropertiesInfo(IList<PropertyInfo> properties, IList<SprinklesException> exceptions)
+        {
+            var propertiesThatCanBeAllowedNames =
+                properties
+                    .Where(x => !SprinklesDecorations.IsExternalTaskArguments(x))
+                    .ToList();
+
+            var propertyNames =
+                propertiesThatCanBeAllowedNames
+                    .Select(SprinklesDecorations.GetArgumentName)
+                    .ToList();
+
+            foreach (var property in properties)
+            {
+                var namespaceClassQualifiedPropertyName = SprinklesDecorations.GetNamespaceClassQualifiedPropertyName(property);
+                if (exceptions.Any(x => x.NamespaceClassQualifiedPropertyName == namespaceClassQualifiedPropertyName))
+                {
+                    continue;
+                }
+
+                try
+                {
+                    SprinklesValidator.ValidateDuplicateBuildClassProperty(property, propertyNames);
+                    _validator.ValidateBuildClassProperty(property);
+                }
+                catch (SprinklesException ex)
+                {
+                    exceptions.Add(ex);
+                }
+            }
+            if (exceptions.Any())
+            {
+                _console.WriteLine(Message_FixErrorsFirst);
+                foreach (var exception in exceptions)
+                {
+                    _console.WriteLine(exception.Message);
+                }
+            }
+
+            return !exceptions.Any();
         }
 
         private void AppendPropertiesInfo(IList<PropertyInfo> properties)
         {
-            foreach (var property in properties)
+            foreach(var property in properties)
             {
-                var argumentName = SprinklesDecorations.GetArgumentName(property);
-                _console.ForegroundColor = Color.Yellow;
-                _console.WriteLine($" * {argumentName}");
-                _console.ResetColor();
-                _console.WriteLine($"   * Description: {SprinklesDecorations.GetArgumentDescription(property)}");
-                foreach (var usage in SprinklesDecorations.GetArgumentUsageExamples(property))
+                AppendPropertyInfo(property);
+            }   
+        }
+
+        private void AppendPropertyInfo(PropertyInfo property)
+        {
+            var argumentName = SprinklesDecorations.GetArgumentName(property);
+            _console.ForegroundColor = Color.Yellow;
+            _console.WriteLine($" * {argumentName}");
+            _console.ResetColor();
+            var description = SprinklesDecorations.GetArgumentDescription(property);
+            if (!string.IsNullOrWhiteSpace(description))
+            {
+                _console.WriteLine($"   * Description: {description}");
+            }
+
+            var acceptsManyArguments = SprinklesDecorations.IsEnumeration(property.PropertyType);
+            var type =
+                (acceptsManyArguments
+                    ? SprinklesDecorations.GetEnumeratedType(property.PropertyType)
+                    : property.PropertyType);
+
+            var usages = SprinklesDecorations.GetArgumentExampleValues(property);
+            var converter = _taskArgumentTypeConverters.FirstOrDefault(x => x.ConversionType == type);
+            if (converter != null)
+            {
+                usages.AddRange(converter.GetExampleInputValues());
+            }
+
+            usages = usages.Select(usage => $"--{argumentName}={usage}").ToList();
+
+            foreach (var usage in usages)
+            {
+                _console.WriteLine($"   * Usage: {usage}");
+            }
+
+            var typeName = type!.Name;
+            var acceptedType = $"   * Accepts: {typeName}";
+            if (acceptsManyArguments)
+            {
+                var delimiter = SprinklesDecorations.GetArgumentEnumerationDelimiterName(property);
+                var hasDelimiter = !string.IsNullOrWhiteSpace(delimiter);
+
+                if (hasDelimiter)
                 {
-                    _console.WriteLine($"   * Usage: {usage}");
+                    acceptedType += $"{Environment.NewLine}   * Parses single argument using Delimiter: {delimiter}";
                 }
-
-                var acceptsManyArguments = SprinklesDecorations.IsEnumeration(property.PropertyType);
-                var typeName =
-                    (acceptsManyArguments
-                        ? SprinklesDecorations.GetEnumeratedType(property.PropertyType)
-                        : property.PropertyType)!.Name;
-
-                var acceptedType = $"   * Accepts: {typeName}";
-                if (acceptsManyArguments)
+                else
                 {
                     acceptedType += " (argument can be provided multiple times)";
                 }
-
-                _console.WriteLine(acceptedType);
-
-                var isFlag = SprinklesDecorations.IsFlag(property);
-                if (isFlag)
-                {
-                    _console.WriteLine($"   * Can be provided as a flag");
-                }
-
             }
+
+            _console.WriteLine(acceptedType);
+
+            if (type.IsEnum)
+            {
+                var enumValues = Enum.GetValues(type);
+                foreach(var enumValue in enumValues)
+                {
+                    _console.WriteLine($"     * {enumValue}");
+                }
+            }
+
+            var validations = SprinklesDecorations.GetArgumentValidations(property);
+            foreach(var validation in validations)
+            {
+                _console.WriteLine($"     * Validation: {validation.DescriptionOfValidation}");
+            }
+
+            var isFlag = SprinklesDecorations.IsFlag(property);
+            if (isFlag)
+            {
+                _console.WriteLine($"   * Can be provided as a flag");
+            }
+
+            _console.WriteLine();
+        }
+        private String GetTaskDescriptionPrintout(String task, String description)
+        {
+            return String.Format("{0,-" + _maxTaskNameLength + "}{1}", task, description);
         }
 
-        private String GetTaskDescriptionPrintout(int maxTaskNameLength, String task, String description)
+        private string GetSectionBreak()
         {
-            return String.Format("{0,-" + maxTaskNameLength + "}{1}", task, description);
+            return new String('=', _maxTaskNameLength + 50);
         }
 
-        private string GetSectionBreak(int maxTaskNameLength)
+        private int GetMaxTaskNameLength()
         {
-            return new String('=', maxTaskNameLength + 50);
+            var maxTaskNameLength = 29;
+
+            foreach (var task in _taskDescriptors.Discovered)
+            {
+                if (task.name.Length > maxTaskNameLength)
+                {
+                    maxTaskNameLength = task.name.Length;
+                }
+            }
+
+            maxTaskNameLength++;
+            return maxTaskNameLength;
         }
     }
 }

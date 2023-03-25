@@ -1,159 +1,152 @@
 ﻿using Cake.Frosting;
 using Cake.Sprinkles.Module.Tests.Models;
 using Cake.Sprinkles.Module.Tests.Models.BooleanTasks;
+using Cake.Sprinkles.Module.Tests.Models.Int32Tasks;
+using Cake.Sprinkles.Module.Validation;
 
 namespace Cake.Sprinkles.Module.Tests
 {
     [TestFixture]
     internal class SprinklesBooleanTaskTests : SprinklesTestBase
     {
-        private CakeHost _host = null!;
-        private BoolTask? Context => (SprinklesTestContextProvider.Context as SprinklesTestContext<BoolTask>)?.Task;
-        //private Exception? ThrownException => ArgumentExtensionsContextProvider<Boolean>.ThrownException;
-
-        [SetUp]
-        public void SetUp()
+        private IList<string> RequiredArguments = new List<string>
         {
-            _host = GetCakeHost<BoolTask>();
-        }
+                nameof(BooleanRequiredTask.Single),
+                nameof(BooleanRequiredTask.List),
+                nameof(BooleanRequiredTask.HashSet)
+        };
 
-        //[Test]
-        //public void ThrowsErrorIfCastingIsInvalid()
-        //{
-        //    var properties = GetAllPropertiesAsStrings();
-        //    var result = _host.Run(properties);
+        private IList<string> OptionalArguments = new List<string>
+        {
+                nameof(BooleanOptionalTask.Single),
+                nameof(BooleanOptionalTask.List),
+                nameof(BooleanOptionalTask.HashSet)
+        };
 
-        //    Assert.That(result, Is.Not.EqualTo(1), "BooleanTask succeeded when it should have failed.");
-
-        //    var exception = ThrownException;
-        //    Assert.That(exception, Is.Not.Null);
-        //    Assert.Multiple(() =>
-        //    {
-        //        Assert.That(exception!.Message,
-        //            Does.Contain("is not a valid value for Boolean. (Parameter 'required_single')"));
-        //        Assert.That(exception.Message,
-        //            Does.Contain("is not a valid value for Boolean. (Parameter 'required_list')"));
-        //        Assert.That(exception.Message,
-        //            Does.Contain("is not a valid value for Boolean. (Parameter 'required_hashset')"));
-        //        Assert.That(exception.Message,
-        //            Does.Contain("is not a valid value for Boolean. (Parameter 'optional_single')"));
-        //        Assert.That(exception.Message,
-        //            Does.Contain("is not a valid value for Boolean. (Parameter 'optional_list')"));
-        //        Assert.That(exception.Message,
-        //            Does.Contain("is not a valid value for Boolean. (Parameter 'optional_hashset')"));
-        //    });
-        //}
-
-        //[Test]
-        //public void CanRequireMultipleArguments()
-        //{
-        //    var result = _host.Run(new String[] { });
-
-        //    Assert.That(result, Is.Not.EqualTo(1), "BooleanTask succeeded when it should have failed.");
-
-        //    var exception = ThrownException;
-        //    Assert.That(exception, Is.Not.Null);
-        //    Assert.Multiple(() =>
-        //    {
-        //        Assert.That(exception!.Message, Does.Contain("Argument 'required_single' was not set."));
-        //        Assert.That(exception.Message, Does.Contain("Argument 'required_list' was not set."));
-        //        Assert.That(exception.Message, Does.Contain("Argument 'required_hashset' was not set."));
-        //    });
-        //}
+        private IList<bool> ArgumentValues = new List<bool>
+        {
+            false, true
+        };
 
         [Test]
-        public void CanDecorateRequiredSingle()
+        public void ThrowsErrorOnRequiredPropertiesIfCastingIsInvalid()
         {
-            var arguments = GetAllPropertiesAsBooleans();
-            var result = _host.Run(arguments);
+            var properties = PrepareArguments(RequiredArguments.Select(x => (x, "foo")));
+            var result = GetCakeHost<BooleanRequiredTask>().Run(FormatCustomArguments(nameof(BooleanRequiredTask), properties));
 
-            Assert.That(result, Is.EqualTo(0), "BooleanTask failed.");
+            Assert.That(result, Is.EqualTo(-1), "Task succeeded when it should have failed.");
 
-            var lastRequiredValue = Boolean.Parse(arguments.Last(x => x.Contains("required_single")).Split("=")[1]);
+            var exceptions = GetSprinklesExceptions();
+            Assert.That(exceptions, Is.Not.Null.And.Not.Empty);
+            Assert.Multiple(() =>
+            {
+                foreach (var expectedArgument in RequiredArguments)
+                {
+                    var exception = exceptions.FirstOrDefault(x => x.TaskArgumentName == expectedArgument);
+                    Assert.That(exception?.InnerMessage, Is.EqualTo(SprinklesValidator.Message_ArgumentWasNotAValidValueForType));
+                    Assert.That(exception?.Message, Does.Contain("Type: Boolean"));
+                }
+            });
+        }
 
-            Assert.That(Context!.RequiredSingle, Is.EqualTo(lastRequiredValue));
+        [Test]
+        public void ThrowsErrorOnOptionalPropertiesIfCastingIsInvalid()
+        {
+            var properties = PrepareArguments(OptionalArguments.Select(x => (x, "foo")));
+            var result = GetCakeHost<BooleanOptionalTask>().Run(FormatCustomArguments(nameof(BooleanOptionalTask), properties));
+
+            Assert.That(result, Is.EqualTo(-1), "Task succeeded when it should have failed.");
+
+            var exceptions = GetSprinklesExceptions();
+            Assert.That(exceptions, Is.Not.Null.And.Not.Empty);
+            Assert.Multiple(() =>
+            {
+                foreach (var expectedArgument in OptionalArguments)
+                {
+                    var exception = exceptions.FirstOrDefault(x => x.TaskArgumentName == expectedArgument);
+                    Assert.That(exception?.InnerMessage, Is.EqualTo(SprinklesValidator.Message_ArgumentWasNotAValidValueForType));
+                    Assert.That(exception?.Message, Does.Contain("Type: Boolean"));
+                }
+            });
+        }
+
+        [Test]
+        public void CanRequireMultipleArguments()
+        {
+            var result = GetCakeHost<BooleanRequiredTask>().Run(FormatCustomArguments(nameof(BooleanRequiredTask)));
+
+            Assert.That(result, Is.EqualTo(-1), "Task succeeded when it should have failed.");
+
+            var exceptions = GetSprinklesExceptions();
+            Assert.That(exceptions, Is.Not.Null.And.Not.Empty);
+            Assert.Multiple(() =>
+            {
+                foreach (var expectedArgument in RequiredArguments)
+                {
+                    var exception = exceptions.FirstOrDefault(x => x.TaskArgumentName == expectedArgument);
+                    Assert.That(exception?.InnerMessage, Is.EqualTo(SprinklesValidator.Message_ArgumentWasNotSet));
+                }
+            });
+        }
+
+        [Test]
+        public void CanDecorateRequiredSingleWithLastValue()
+        {
+            var properties = PrepareArguments(RequiredArguments.SelectMany(x => ArgumentValues, (arg, value) => (arg, value.ToString())));
+            var result = GetCakeHost<BooleanRequiredTask>().Run(FormatCustomArguments(nameof(BooleanRequiredTask), properties));
+
+            Assert.That(result, Is.EqualTo(0), "Task failed.");
+            Assert.That(GetContext<BooleanRequiredTask>()?.Single, Is.EqualTo(ArgumentValues.Last()));
         }
 
         [Test]
         public void CanDecorateRequiredList()
         {
-            var arguments = GetAllPropertiesAsBooleans();
-            var result = _host.Run(arguments);
+            var properties = PrepareArguments(RequiredArguments.SelectMany(x => ArgumentValues, (arg, value) => (arg, value.ToString())));
+            var result = GetCakeHost<BooleanRequiredTask>().Run(FormatCustomArguments(nameof(BooleanRequiredTask), properties));
 
-            Assert.That(result, Is.EqualTo(0), "BooleanTask failed.");
-
-            var requiredValues = arguments.Where(x => x.Contains("required_list"))
-                .Select(x => Boolean.Parse(x.Split("=")[1])).ToList();
-
-            Assert.That(Context!.RequiredList, Is.EqualTo(requiredValues));
+            Assert.That(result, Is.EqualTo(0), "Task failed.");
+            Assert.That(GetContext<BooleanRequiredTask>()?.List, Is.EqualTo(ArgumentValues));
         }
 
         [Test]
         public void CanDecorateRequiredHashSet()
         {
-            var arguments = GetAllPropertiesAsBooleans();
-            var result = _host.Run(arguments);
+            var properties = PrepareArguments(RequiredArguments.SelectMany(x => ArgumentValues, (arg, value) => (arg, value.ToString())));
+            var result = GetCakeHost<BooleanRequiredTask>().Run(FormatCustomArguments(nameof(BooleanRequiredTask), properties));
 
-            Assert.That(result, Is.EqualTo(0), "BooleanTask failed.");
-
-            // A HashSet will only have 1 key for the same value.
-            var requiredValues =
-                arguments
-                    .Where(x => x.Contains("required_hashset"))
-                    .Select(x => Boolean.Parse(x.Split("=")[1]))
-                    .Take(1)
-                    .ToList();
-
-            Assert.That(Context!.RequiredHashSet.OrderBy(x => x).ToList(), Is.EqualTo(requiredValues));
+            Assert.That(result, Is.EqualTo(0), "Task failed.");
+            Assert.That(GetContext<BooleanRequiredTask>()?.List, Is.EqualTo(ArgumentValues));
         }
 
         [Test]
         public void CanDecorateOptionalSingle()
         {
-            var arguments = GetAllPropertiesAsBooleans();
-            var result = _host.Run(arguments);
+            var properties = PrepareArguments(OptionalArguments.SelectMany(x => ArgumentValues, (arg, value) => (arg, value.ToString())));
+            var result = GetCakeHost<BooleanOptionalTask>().Run(FormatCustomArguments(nameof(BooleanOptionalTask), properties));
 
-            Assert.That(result, Is.EqualTo(0), "BooleanTask failed.");
-
-            var lastValue = Boolean.Parse(arguments.Last(x => x.Contains("optional_single")).Split("=")[1]);
-
-            Assert.That(Context!.OptionalSingle, Is.EqualTo(lastValue));
+            Assert.That(result, Is.EqualTo(0), "Task failed.");
+            Assert.That(GetContext<BooleanOptionalTask>()?.Single, Is.EqualTo(ArgumentValues.Last()));
         }
 
         [Test]
         public void CanDecorateOptionalList()
         {
-            var arguments = GetAllPropertiesAsBooleans();
-            var result = _host.Run(arguments);
+            var properties = PrepareArguments(OptionalArguments.SelectMany(x => ArgumentValues, (arg, value) => (arg, value.ToString())));
+            var result = GetCakeHost<BooleanOptionalTask>().Run(FormatCustomArguments(nameof(BooleanOptionalTask), properties));
 
-            Assert.That(result, Is.EqualTo(0), "BooleanTask failed.");
-
-            var values =
-                arguments
-                    .Where(x => x.Contains("optional_list"))
-                    .Select(x => Boolean.Parse(x.Split("=")[1]))
-                    .ToList();
-
-            Assert.That(Context!.OptionalList, Is.EqualTo(values));
+            Assert.That(result, Is.EqualTo(0), "Task failed.");
+            Assert.That(GetContext<BooleanOptionalTask>()?.List, Is.EqualTo(ArgumentValues));
         }
 
         [Test]
         public void CanDecorateOptionalHashSet()
         {
-            var arguments = GetAllPropertiesAsBooleans();
-            var result = _host.Run(arguments);
+            var properties = PrepareArguments(OptionalArguments.SelectMany(x => ArgumentValues, (arg, value) => (arg, value.ToString())));
+            var result = GetCakeHost<BooleanOptionalTask>().Run(FormatCustomArguments(nameof(BooleanOptionalTask), properties));
 
-            Assert.That(result, Is.EqualTo(0), "BooleanTask failed.");
-
-            // A HashSet will only have 1 key for the same value.
-            var values =
-                arguments
-                    .Where(x => x.Contains("optional_hashset"))
-                    .Select(x => Boolean.Parse(x.Split("=")[1]))
-                    .Take(1)
-                    .ToList();
-
-            Assert.That(Context!.OptionalHashSet.OrderBy(x => x).ToList(), Is.EqualTo(values));
+            Assert.That(result, Is.EqualTo(0), "Task failed.");
+            Assert.That(GetContext<BooleanOptionalTask>()?.List, Is.EqualTo(ArgumentValues));
         }
     }
 }
