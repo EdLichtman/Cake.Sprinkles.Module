@@ -8,6 +8,9 @@ using Cake.Sprinkles.Module.Validation.Exceptions;
 
 namespace Cake.Sprinkles.Module.Validation
 {
+    /// <summary>
+    /// Allows you to create your own validation for incoming Task Arguments.
+    /// </summary>
     [AttributeUsage(AttributeTargets.Property, Inherited = true)]
     public abstract class TaskArgumentValidationAttribute : Attribute
     {

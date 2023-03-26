@@ -12,8 +12,17 @@ using Cake.Sprinkles.Module.Validation;
 
 namespace Cake.Sprinkles.Module
 {
+    /// <summary>
+    /// The <see cref="SprinklesDescriptionModule"/>, a module add-in to Cake Frosting, 
+    /// which allows you to sprinkle in Task Arguments to describe to the user how to use 
+    /// your console application
+    /// </summary>
     public class SprinklesDescriptionModule : ICakeModule
     {
+        /// <summary>
+        /// Registers all required code with the <see cref="ICakeContainerRegistrar"/>.
+        /// </summary>
+        /// <param name="registrar">The <see cref="ICakeContainerRegistrar"/>.</param>
         public void Register(ICakeContainerRegistrar registrar)
         {
             registrar.RegisterType<SprinklesDescriptionScriptHost>().As<DescriptionScriptHost>().Singleton();

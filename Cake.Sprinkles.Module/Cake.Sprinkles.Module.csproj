@@ -1,12 +1,21 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <PackageId>Cake.Sprinkles.Module</PackageId>
+    <Version>1.0.0</Version>
+    <Authors>Edward Lichtman</Authors>
+    <Description>A module to be used with Cake Frosting. It allows for Task Arguments to be instantiated through decoration of C# Properties.</Description>
+    <PackRelease>true</PackRelease>
+    <EnablePackageValidation>true</EnablePackageValidation>
+    <PublishDocumentationFile>true</PublishDocumentationFile>
+  </PropertyGroup>
 
   <PropertyGroup>
     <TargetFramework>net6.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
-    <Platform>win-x64</Platform>
-    <IsPackable>false</IsPackable>
+    <IsPackable>true</IsPackable>
     <NoWarn>${NoWarn};CS0067</NoWarn>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
   </PropertyGroup>
 
   <ItemGroup>

@@ -138,30 +138,45 @@ You can create your own ITaskArgumentTypeConverter<TType>. A simple example woul
 ## API
 The Programming Interface between you, the developer, and Sprinkles, includes the following:
 
-* Attributes:
+* Enhanced Descriptions:
   * ***TaskArgumentNameAttribute***
-    * Allows you to decorate a property with an argument name. Whatever you add here can be passed in with --{argument_name}
+    * Decorates a property with an argument name. Describes the name of the argument being passed in via the CLI, the cake.config file, or the environment variable.
   * ***TaskArgumentDescriptionAttribute***
-    * Allows you to decorate a property with an argument description. Whatever you add here will be written to the console when the user runs --description with the --target=TaskName
+    * Decorates a property with an argument description. Whatever you add here will described when the user runs --description with the --target=TaskName
   * ***TaskArgumentExampleValueAttribute***
-    * Allows you to decorate a property with examples of how to use the argument. Whatever you add here will be output to the console with "Usage: --{argument_name}={example_value}"
+    * Decorates a property with examples of how to use the argument. Whatever you add here will be output to the console with "Usage: --{argument_name}={example_value}"
   * ***TaskArgumentIsRequiredAttribute***
-    * Allows you to automatically prevent the task from continuing if the task argument is not provided by the user
-  * ***TaskArgumentIsFlagAttribute***
-    * Allows the user to use input based on the existence of a flag. i.e. --force. If an argument is a flag, you can still override the flag value, i.e. --force=false
-  * ***TaskArgumentEnumerationDelimiterAttribute***
-    * Allows you to specify a delimiter which will split an argument. If you use a cake.config file, you can only specify an argument once, so if you need multiple values, this attribute will be useful.
-  * ***TaskArgumentsAttribute***
-    * Allows you to offload task arguments to another object. For example, you can have a "PublishTask", and you can have a property "PublishArguments". By decorating the property with **`[TaskArguments]`**, you're telling Sprinkles to create and hydrate that Property with any Arguments. 
-    * TaskArgumentsAttribute existence on one property doesn't prevent you from adding other, custom arguments to your task. This way you can share some arguments and custom declare others.
+    * Automatically prevents the task from continuing if the task argument is not provided by the user, and describes this behavior to the user.
+  
+* Enhanced Parsing Behavior:
+  * If a type can be converted from a string, then it will automatically convert it for you. For example, if you want an Int32 value, and the argument is "1", then it will parse it as 1.
+    * Enum values can be parsed as well.
+    * If a class has a single constructor, that accepts a string, it will parse it for you. 
+      * For instance, a DirectoryInfo, or DateTime could be created from a string.
+  * If a type has multiple arguments, (i.e. --argument=foo --argument=bar), you can parse it as a collection. You must use `ImmutableList<TType>` or `ImmutableHashSet<TType>`.
+  * If a value is added to the environment variable or cake.config file, you cannot specify multiple arguments. Therefore, you can use...
+    * ***TaskArgumentEnumerationDelimiterAttribute***
+      * Specifies a delimiter which will split an argument. 
+  * If a value is a flag (i.e. --has_argument) and has no value on it, you can mark the argument as a flag.
+    * ***TaskArgumentIsFlagAttribute***
+      * If an argument is a flag, you can still override the flag value.
+        * i.e. --force=false
+  * If you want to share common Task Arguments with other tasks, or simplify your Task Class by not having so much annotations on it, you can declare `[TaskArguments]`. Any property on the class described by `[TaskArguments]` will be populated as if it were on the Task.
+    * ***TaskArgumentsAttribute***
+        * By using this feature, you aren't prevented from adding other custom arguments to your task. You can still define `[TaskArgumentName()]` on one property, and `[TaskArguments]` on another property in the same class.
 
-* `TaskArgumentTypeConverter<TType>`
-  * An abstract class to create an implementation of. It allows you to customize your own types. For example, if you wanted to create a custom conversion from a globbed file path to the first globbed file, you could use a TaskArgumentTypeConverter.
-  * To use it, you must register it on the CakeHost with the `public static CakeHost RegisterTypeConverter<TType>(this CakeHost host);` method.
-  * If you use this, none of the parsing attributes work.
-  * An optional override (not required) is the `IEnumerable<List> GetExampleValues();` method. It will automatically populate Usages for any Task Arguments 
+* Type Conversion
+  * By implementing your own version of the `TaskArgumentTypeConverter<TType>`, you can customize your own conversion from a string. 
+    * *For example, if you wanted to create a custom conversion from a string to a series of globbed file paths, you could implement this abstract interface.*
+  * Once you create it, you must register it on the CakeHost with `host.RegisterTypeConverter<TType>()`.
+  * Once used, you cannot use any of the built-in "Enhanced Parsing Behavior" attributes. You can, however still use the "Enhanced Descriptions".
+  * An optional override (not required) is the `IEnumerable<List> GetExampleValues();` method. It will automatically populate Usages for any Task Arguments.
+  * You can implement multiple TypeConversions for the same type. 
+    * *As an example: This may be useful if you want to create a glob converter that specifically only allows relative paths within your current directory, and another glob converter that allows you to go anywhere on disc.*
+    * If you do this, any time you use this custom converted type, you must specify the TypeConverter
+      * **TaskArgumentConverterAttribute**
+        * Takes in a type, and allows you to specify your converter. i.e. `[TaskArgumentConverter(typeof(GlobPathInDirectoryConverter))]`
 
 * Validation
-
-## Roadmap:
-* Need to finish Documenting.
+  * By implementing your own version of the `[TaskArgumentValidation]` abstract attribute, you can add enhanced validation.
+    * For example, you could add your own "Number must be between 0 and 255" validation attribute, which will prevent the task from running if the value coming in is incorrect.

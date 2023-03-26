@@ -10,15 +10,36 @@ using System.Threading.Tasks;
 
 namespace Cake.Sprinkles.Module.TypeConversion
 {
+    /// <summary>
+    /// A means of obtaining the Task Argument Value from the CLI arguments, the cake.config file, and the environment variables.
+    /// </summary>
     public class TaskArgument
     {
+        /// <summary>
+        /// Gets the Name of the Task Argument.
+        /// </summary>
         public string Name { get; }
+
+        /// <summary>
+        /// Gets the Property <see cref="System.Type"/> of the Task Argument
+        /// </summary>
         public Type Type { get; }
+
+        /// <summary>
+        /// Gets the <see cref="PropertyInfo"/> for the Task Argument
+        /// </summary>
         public PropertyInfo Property { get; }
         private readonly ICakeArguments _arguments;
         private readonly ICakeConfiguration _configuration;
         private readonly ICakeEnvironment _environment;
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="TaskArgument"/> class.
+        /// </summary>
+        /// <param name="arguments">The CLI arguments.</param>
+        /// <param name="configuration">The cake.config file configuration.</param>
+        /// <param name="environment">The environment variables.</param>
+        /// <param name="property">The <see cref="PropertyInfo"/> for the Task Argument.</param>
         public TaskArgument(
             ICakeArguments arguments, 
             ICakeConfiguration configuration, 
@@ -34,6 +55,10 @@ namespace Cake.Sprinkles.Module.TypeConversion
             Type = property.PropertyType;
         }
 
+        /// <summary>
+        /// Gets the value as a single nullable string.
+        /// </summary>
+        /// <returns>The value of the Task Argument.</returns>
         public string? GetValue()
         {
             var isFlag = SprinklesDecorations.IsFlag(Property);
@@ -55,6 +80,10 @@ namespace Cake.Sprinkles.Module.TypeConversion
             return value?.ToString();
         }
 
+        /// <summary>
+        /// Gets the value as a list of strings.
+        /// </summary>
+        /// <returns>The value of the Task Argument.</returns>
         public IList<string> GetValues()
         {
             var list = new List<string>();
