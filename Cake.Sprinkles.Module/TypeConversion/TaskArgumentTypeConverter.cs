@@ -1,10 +1,5 @@
-﻿using Cake.Sprinkles.Module.Annotations;
+﻿using Cake.Sprinkles.Module.Validation;
 using Cake.Sprinkles.Module.Validation.Exceptions;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Cake.Sprinkles.Module.TypeConversion
 {
@@ -14,7 +9,6 @@ namespace Cake.Sprinkles.Module.TypeConversion
     /// <typeparam name="TType">The target type used for converting a string.</typeparam>
     public abstract class TaskArgumentTypeConverter<TType> : ITaskArgumentTypeConverter
     {
-        public const string Message_CouldNotConvertToCustomType = "Could not convert to custom type '{0}.{1}'. Be sure the TasArgumentTypeConverter handles all cases.";
         /// <inheritdoc cref="ITaskArgumentTypeConverter.ConversionType"/>
         public Type ConversionType => typeof(TType);
 
@@ -45,7 +39,7 @@ namespace Cake.Sprinkles.Module.TypeConversion
                     ex, 
                     GetType(), 
                     string.Format(
-                        Message_CouldNotConvertToCustomType, 
+                        SprinklesValidator.Message_ArgumentConverterCouldNotConvertToCustomType, 
                         typeof(TType).Namespace,
                         typeof(TType).Name));
             }

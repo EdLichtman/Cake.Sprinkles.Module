@@ -1,24 +1,49 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
-  <PropertyGroup>
-    <PackageId>Cake.Sprinkles.Module</PackageId>
-    <Version>1.0.0</Version>
-    <Authors>Edward Lichtman</Authors>
-    <Description>A module to be used with Cake Frosting. It allows for Task Arguments to be instantiated through decoration of C# Properties.</Description>
-    <PackRelease>true</PackRelease>
-    <EnablePackageValidation>true</EnablePackageValidation>
-    <PublishDocumentationFile>true</PublishDocumentationFile>
-  </PropertyGroup>
+    <PropertyGroup>
+        <PackageId>Cake.Sprinkles.Module</PackageId>
+		<Title>Cake Sprinkles Module</Title>
+        <PackageVersion>1.0.0</PackageVersion>
+        <Authors>Edward Lichtman</Authors>
+        <Description>A module to be used with Cake Frosting. It automatically injects arguments from the CLI, Cake.Config file, or Environment Variables into C# properties through Decorator attributes, and uses those same decorator attributes to enhance documentation and reduce the scope of messaging you need to include for users of your Cake Frosting application.</Description>
+		<PackageDescription>$(Description)</PackageDescription>
+		<PackageProjectUrl>https://github.com/EdLichtman/Cake.Sprinkles.Module</PackageProjectUrl>
+		<PackageIcon>.\CakeSprinklesIcon.png</PackageIcon>
+		<PackageReadmeFile>.\readme.md</PackageReadmeFile>
+		<PackageTags>Cake;Script;Build</PackageTags>
+		<PackageReleaseNotes>The initial publish of Cake Sprinkles. It includes automatic argument parsing, enhanced documentation, custom validation and the custom type conversion.</PackageReleaseNotes>
+		<PackageLicenseExpression>MIT</PackageLicenseExpression>
+    </PropertyGroup>
 
-  <PropertyGroup>
-    <TargetFramework>net6.0</TargetFramework>
-    <ImplicitUsings>enable</ImplicitUsings>
-    <Nullable>enable</Nullable>
-    <IsPackable>true</IsPackable>
-    <NoWarn>${NoWarn};CS0067</NoWarn>
-    <GenerateDocumentationFile>true</GenerateDocumentationFile>
-  </PropertyGroup>
+	<PropertyGroup>
+		<RepositoryUrl>https://github.com/EdLichtman/Cake.Sprinkles.Module.git</RepositoryUrl>
+		<RepositoryType>git</RepositoryType>
+		<RepositoryBranch>main</RepositoryBranch>
+		<PublishRepositoryUrl>true</PublishRepositoryUrl>
+		<IncludeSymbols>true</IncludeSymbols>
+	</PropertyGroup>
+	
+	<PropertyGroup>
+		<PackRelease>true</PackRelease>
+		<EnablePackageValidation>true</EnablePackageValidation>
+		<GenerateDocumentationFile>true</GenerateDocumentationFile>
+		<PublishDocumentationFile>true</PublishDocumentationFile>
+	</PropertyGroup>
 
-  <ItemGroup>
-    <PackageReference Include="Cake.Frosting" Version="3.0.0" />
-  </ItemGroup>
+    <PropertyGroup>
+        <TargetFramework>net6.0</TargetFramework>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+        <IsPackable>true</IsPackable>
+        <NoWarn>${NoWarn};CS0067</NoWarn>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <PackageReference Include="Cake.Frosting" Version="3.0.0" />
+		<PackageReference Include="Microsoft.SourceLink.GitHub" Version="1.1.1" PrivateAssets="All" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<None Include="..\CakeSprinklesIcon.png" Pack="true" PackagePath="\"/>
+		<None Include="..\readme.md" Pack="true" PackagePath="\"/>
+	</ItemGroup>
 </Project>
