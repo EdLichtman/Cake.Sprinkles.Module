@@ -22,7 +22,7 @@ namespace Cake.Sprinkles.Module.TypeConversion
         /// <summary>
         /// Gets the Usage Values for Usage Descriptions. No need to include --argument_name=. Only include values.
         /// </summary>
-        /// <returns>An <see cref="IEnumerable{string}"/> of Usage Values.</returns>
+        /// <returns>An <see cref="IEnumerable{String}"/> of Usage Values.</returns>
         public IEnumerable<string> GetExampleInputValues();
 
         /// <summary>

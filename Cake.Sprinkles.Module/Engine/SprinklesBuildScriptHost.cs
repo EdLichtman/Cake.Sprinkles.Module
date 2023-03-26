@@ -17,13 +17,16 @@ namespace Cake.Sprinkles.Module.Engine
         /// <param name="context">The context.</param>
         /// <param name="reportPrinter">The report printer.</param>
         /// <param name="log">The log.</param>
+        /// <param name="sprinklesTaskDescriptors">The <see cref="SprinklesTaskDescriptors"/>.</param>
+        /// <param name="tasks">The <see cref="IEnumerable{IFrostingTask}"/>.</param>
+        /// <param name="sprinklesDecorator">The <see cref="SprinklesDecorator"/>.</param>
         public SprinklesBuildScriptHost(
             ICakeEngine engine,
             IExecutionStrategy executionStrategy,
             IFrostingContext context,
             ICakeReportPrinter reportPrinter,
             ICakeLog log, 
-            SprinklesTaskDescriptors sprinkles,
+            SprinklesTaskDescriptors sprinklesTaskDescriptors,
             IEnumerable<IFrostingTask> tasks,
             SprinklesDecorator sprinklesDecorator) : base(engine, executionStrategy, context, reportPrinter, log)
         {
@@ -32,7 +35,7 @@ namespace Cake.Sprinkles.Module.Engine
                 log.Warning(SprinklesEngine.Warning_FrostingTeardownWillNotRun);
                 var target = context.Argument("target", "Default");
 
-                var executingTask = sprinkles.Discovered.FirstOrDefault(x => x.name == target);
+                var executingTask = sprinklesTaskDescriptors.Discovered.FirstOrDefault(x => x.name == target);
                 if (executingTask != (default, default, default))
                 {
                     var task = tasks.First(x => SprinklesDecorations.GetTaskName(x) == target);
