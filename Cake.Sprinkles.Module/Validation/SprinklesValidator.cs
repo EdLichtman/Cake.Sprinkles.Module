@@ -27,6 +27,7 @@ namespace Cake.Sprinkles.Module.Validation
         public const string Message_BeSureToAddTypeConverter = "Be sure to register any Custom TaskArgumentTypeConverters with the CakeHost.";
         public const string Message_ArgumentConverterNotValid = $"Argument converter is not valid. Be sure that the ArgumentConverterType implements {nameof(ITaskArgumentTypeConverter)}.";
         public const string Message_ArgumentConverterMultipleMustHaveAnnotation = $"There are multiple implementations of a type converter for your type. You must specify which to use with the {nameof(TaskArgumentConverterAttribute)}.";
+        public const string Message_ArgumentConverterCouldNotConvertToCustomType = "Could not convert to custom type '{0}.{1}'. Be sure the TasArgumentTypeConverter handles all cases.";
 
         private readonly IList<ITaskArgumentTypeConverter> _typeConverters;
         public SprinklesValidator(IEnumerable<ITaskArgumentTypeConverter> typeConverters)
