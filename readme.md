@@ -178,6 +178,13 @@ The Programming Interface between you, the developer, and Sprinkles, includes th
     * If you do this, any time you use this custom converted type, you must specify the TypeConverter
       * **TaskArgumentConverterAttribute**
         * Takes in a type, and allows you to specify your converter. i.e. `[TaskArgumentConverter(typeof(GlobPathInDirectoryConverter))]`
+  * System.ComponentModel.TypeConverter is also supported
+    * The `TaskArgumentTypeConverter<TType>` inherits from System.ComponentModel.TypeConverter. Therefore, you can apply the [TaskArgumentConverter] attribute to a single instance of a property on a task, or, you can apply the [TypeConverter] attribute to the class itself.
+      * The [TaskArgumentConverter] is more useful if you do not own the type. 
+        * For example, if you wanted to convert from string to DirectoryInfo, you could use that attribute.
+      * The [TypeConverter] is useful if you want all instances to automatically get converted. 
+        * For example, if you own the type, like `public class MyType` and you want all tasks that have a property that is of type `MyType` to automatically have their type converted.
+        * If you use [TypeConverter], you do not need to register the type converter with `host.RegisterTypeConverter<TType>()`
 
 * Validation
   * By implementing your own version of the `[TaskArgumentValidation]` abstract attribute, you can add enhanced validation.
