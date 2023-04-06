@@ -123,11 +123,6 @@ namespace Cake.Sprinkles.Module.Engine
             try
             {
                 var taskArgument = new TaskArgument(_arguments, _configuration, _environment, property);
-                
-                if (TryConvertCustom(taskArgument, out object? result))
-                {
-                    return result;
-                } 
 
                 var value = taskArgument.GetValue();
                 if (!SprinklesDecorations.IsFlag(property) && !string.IsNullOrWhiteSpace(value))
@@ -136,6 +131,11 @@ namespace Cake.Sprinkles.Module.Engine
                     {
                         validator.Validate(property, value);
                     }
+                }
+
+                if (TryConvertCustom(taskArgument, out var result))
+                {
+                    return result;
                 }
 
                 if (!string.IsNullOrWhiteSpace(value))
@@ -163,11 +163,6 @@ namespace Cake.Sprinkles.Module.Engine
             {
                 var taskArgument = new TaskArgument(_arguments, _configuration, _environment, property);
 
-                if (TryConvertCustom(taskArgument, out object? result))
-                {
-                    return result;
-                }
-
                 var values = taskArgument.GetValues();
                 //// At this point it's a collection of strings
                 SprinklesValidator.ValidateEnumerableRuntimeArguments(values, property);
@@ -187,6 +182,11 @@ namespace Cake.Sprinkles.Module.Engine
                     }
                 }
 
+                if (TryConvertCustom(taskArgument, out var result))
+                {
+                    return result;
+                }
+
                 var typedValues = Cast(list, property);
 
                 return GetEnumerationResult(typedValues, property, enumeratedType);
@@ -202,17 +202,29 @@ namespace Cake.Sprinkles.Module.Engine
             } 
         }
 
-        private bool TryConvertCustom(TaskArgument argument, out object? result) { 
-            var converters = _typeConverters.Where(x => x.ConversionType == argument.Type).ToList();
-            if (converters.Count > 1)
+        private bool TryConvertCustom(TaskArgument argument, out object? result) {
+            var converters = _typeConverters.Where(x => x.ConversionType == argument.Type).Select(x => (TypeConverter)x).ToList();
+            TypeConverter preferredConverter;
+            if (!converters.Any() || converters.Count > 1)
             {
-                var preferredConverter = SprinklesDecorations.GetArgumentConverter(argument.Property, _typeConverters);
-                result = preferredConverter?.Convert(argument);
+                preferredConverter = 
+                    SprinklesDecorations.GetArgumentConverter(argument.Property, _typeConverters) 
+                        as TypeConverter 
+                    ?? TypeDescriptor.GetConverter(argument.Type);
             } 
-            else {
-                result = converters.FirstOrDefault()?.Convert(argument);
+            else
+            {
+                preferredConverter = converters.First();
             }
 
+            if (preferredConverter == null
+                || !preferredConverter.CanConvertFrom(typeof(TaskArgument)))
+            {
+                result = null;
+                return false;
+            }
+
+            result = preferredConverter.ConvertFrom(argument);
             return result != null;
         }
 

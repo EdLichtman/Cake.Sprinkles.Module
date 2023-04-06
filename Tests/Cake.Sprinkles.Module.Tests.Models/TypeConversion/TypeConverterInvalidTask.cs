@@ -3,6 +3,7 @@ using Cake.Sprinkles.Module.Annotations.Arguments;
 using Cake.Sprinkles.Module.TypeConversion;
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -21,6 +22,11 @@ namespace Cake.Sprinkles.Module.Tests.Models.TypeConversion
         [TaskArgumentName(nameof(TypeWithInvalidConverter))]
         [TaskArgumentConverter(typeof(Type))]
         public TypeWithUsage TypeWithInvalidConverter { get; set; } = null!;
+
+        [TaskArgumentName(nameof(RequiredType))]
+        [TaskArgumentIsRequired]
+        public TypeConversionThatErrors RequiredType { get; set; } = null!;
+
         public override void Run(SprinklesTestContext<TypeConverterInvalidTask> context)
         {
             context.Task = this;

@@ -145,6 +145,8 @@ The Programming Interface between you, the developer, and Sprinkles, includes th
     * Decorates a property with an argument description. Whatever you add here will described when the user runs --description with the --target=TaskName
   * ***TaskArgumentExampleValueAttribute***
     * Decorates a property with examples of how to use the argument. Whatever you add here will be output to the console with "Usage: --{argument_name}={example_value}"
+
+* Enhanced Descriptions - Allowed with TypeConversion
   * ***TaskArgumentIsRequiredAttribute***
     * Automatically prevents the task from continuing if the task argument is not provided by the user, and describes this behavior to the user.
   
@@ -169,7 +171,7 @@ The Programming Interface between you, the developer, and Sprinkles, includes th
   * By implementing your own version of the `TaskArgumentTypeConverter<TType>`, you can customize your own conversion from a string. 
     * *For example, if you wanted to create a custom conversion from a string to a series of globbed file paths, you could implement this abstract interface.*
   * Once you create it, you must register it on the CakeHost with `host.RegisterTypeConverter<TType>()`.
-  * Once used, you cannot use any of the built-in "Enhanced Parsing Behavior" attributes. You can, however still use the "Enhanced Descriptions".
+  * Once used, you cannot use any of the built-in "Enhanced Parsing Behavior" attributes, other than the "Required" attribute. You can, however still use the "Enhanced Descriptions", as well as the "Required" attribute.
   * An optional override (not required) is the `IEnumerable<List> GetExampleValues();` method. It will automatically populate Usages for any Task Arguments.
   * You can implement multiple TypeConversions for the same type. 
     * *As an example: This may be useful if you want to create a glob converter that specifically only allows relative paths within your current directory, and another glob converter that allows you to go anywhere on disc.*

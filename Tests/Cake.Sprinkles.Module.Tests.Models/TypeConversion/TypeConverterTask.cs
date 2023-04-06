@@ -1,6 +1,7 @@
 ﻿using Cake.Frosting;
 using Cake.Sprinkles.Module.Annotations.Arguments;
 using Cake.Sprinkles.Module.TypeConversion;
+using System.ComponentModel;
 
 namespace Cake.Sprinkles.Module.Tests.Models.TypeConversion
 {

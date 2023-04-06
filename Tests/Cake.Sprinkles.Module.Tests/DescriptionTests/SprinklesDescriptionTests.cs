@@ -425,6 +425,27 @@ namespace Cake.Sprinkles.Module.Tests.DescriptionTests
                 notValidTypeRegex);
         }
 
+        [Test]
+        public void SystemComponentModelConverterAttributeListsExamplesIfApplicable()
+        {
+            console = GetConsoleReader<SystemComponentModelTypeConverterTask>(true);
+
+            console.ConfirmRunContains(
+                RegexProvider.GetArgument(nameof(SystemComponentModelTypeConverterTask.MyCustomType)),
+                RegexProvider.GetAcceptsType<MyCustomType>(),
+                RegexProvider.GetRawUsage($"--{nameof(SystemComponentModelTypeConverterTask.MyCustomType)}={MyCustomType.CustomExample}"));
+        }
+
+        [Test]
+        public void SystemComponentModelConverterAttributeDoesNotListExamplesIfNotApplicable()
+        {
+            console = GetConsoleReader<SystemComponentModelTypeConverterTask>(true);
+
+            console.ConfirmRunContains(
+                RegexProvider.GetArgument(nameof(SystemComponentModelTypeConverterTask.MyOtherCustomType)),
+                RegexProvider.GetAcceptsType<MyOtherCustomType>());
+        }
+
         private ConsoleReader GetConsoleReader<TTask>(bool includeTarget, params (string key, string? value)[] args) where TTask : IFrostingTask
         {
             var argsList = args.ToList();

@@ -102,7 +102,7 @@ namespace Cake.Sprinkles.Module.Tests.DescriptionTests
                 return new Regex($"^ *\\* Accepts: {enumeratedType!.Name} \\(argument can be provided multiple times\\)$");
             }
 
-            return new Regex($"^ *\\* Accepts: {type} *$");
+            return new Regex($"^ *\\* Accepts: {type.Name} *$");
         }
 
         public static Regex? GetAcceptsType<TTask>(string propertyName) 

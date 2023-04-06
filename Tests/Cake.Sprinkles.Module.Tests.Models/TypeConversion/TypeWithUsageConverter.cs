@@ -1,4 +1,5 @@
 ﻿using Cake.Sprinkles.Module.TypeConversion;
+using System.Globalization;
 
 namespace Cake.Sprinkles.Module.Tests.Models.TypeConversion
 {
@@ -13,7 +14,7 @@ namespace Cake.Sprinkles.Module.Tests.Models.TypeConversion
         {
             return GetUsageValuesStatic();
         }
-        protected override TypeWithUsage ConvertType(TaskArgument value)
+        protected override TypeWithUsage ConvertType(TaskArgument value, CultureInfo? cultureInfo)
         {
             return new TypeWithUsage()
             {
@@ -34,7 +35,7 @@ namespace Cake.Sprinkles.Module.Tests.Models.TypeConversion
         {
             return GetUsageValuesStatic();
         }
-        protected override TypeWithUsage ConvertType(TaskArgument value)
+        protected override TypeWithUsage ConvertType(TaskArgument value, CultureInfo? cultureInfo)
         {
             return new TypeWithUsage()
             {
@@ -45,7 +46,7 @@ namespace Cake.Sprinkles.Module.Tests.Models.TypeConversion
 
     public class TypeWithoutUsageConverter : TaskArgumentTypeConverter<TypeWithoutUsage>
     {
-        protected override TypeWithoutUsage ConvertType(TaskArgument value)
+        protected override TypeWithoutUsage ConvertType(TaskArgument value, CultureInfo? cultureInfo)
         {
             return new TypeWithoutUsage()
             {
@@ -57,7 +58,7 @@ namespace Cake.Sprinkles.Module.Tests.Models.TypeConversion
     public class TypeConversionThatErrorsTypeConverter : TaskArgumentTypeConverter<TypeConversionThatErrors>
     {
         public const string ExpectedInternalException = "Something went wrong while converting type.";
-        protected override TypeConversionThatErrors ConvertType(TaskArgument value)
+        protected override TypeConversionThatErrors ConvertType(TaskArgument value, CultureInfo? cultureInfo)
         {
             throw new Exception(ExpectedInternalException);
         }
@@ -65,7 +66,7 @@ namespace Cake.Sprinkles.Module.Tests.Models.TypeConversion
 
     public class TypeWithUsageListConverter : TaskArgumentTypeConverter<IList<TypeWithUsage>>
     {
-        protected override IList<TypeWithUsage> ConvertType(TaskArgument value)
+        protected override IList<TypeWithUsage> ConvertType(TaskArgument value, CultureInfo? cultureInfo)
         {
             return value.GetValues().Select(x => new TypeWithUsage
             {

@@ -129,7 +129,7 @@ namespace Cake.Sprinkles.Module.Tests
         }
 
         [Test(Description = "A TypeConverter Attribute with an invalid type in the constructor will throw an understandable exception")]
-        public void TypeConverterAttributeWithInvalidTypeConverterTypeThrowsException()
+        public void TypeConverterAttributeWithTypeThatDoesNotImplementTaskArgumentConverterThrowsException()
         {
             GetCakeHost<TypeConverterInvalidTask>()
                 .RegisterTypeConverter<TypeWithUsageConverter>()
@@ -140,6 +140,44 @@ namespace Cake.Sprinkles.Module.Tests
 
             var exception = GetSprinklesExceptionForProperty<TypeConverterInvalidTask>(nameof(TypeConverterInvalidTask.TypeWithInvalidConverter));
             Assert.That(exception?.InnerMessage, Is.EqualTo(SprinklesValidator.Message_ArgumentConverterNotValid));
+        }
+
+        [Test(Description = "A TypeConverter can be applied to a custom type in order to have it be automatically parsed for all instances.")]
+        public void SystemComponentModelTypeConverterAttributeCanBeAppliedToCustomTypes()
+        {
+            var expectedValue = Guid.NewGuid().ToString();
+            GetCakeHost<SystemComponentModelTypeConverterTask>()
+                .Run(FormatCustomArguments(nameof(SystemComponentModelTypeConverterTask),
+                (nameof(SystemComponentModelTypeConverterTask.MyCustomType), expectedValue)));
+            
+            var context = GetContext<SystemComponentModelTypeConverterTask>();
+            
+            //Proves that it doesn't populate, even though we're not passing in an argument for InvalidTypeConverter
+            Assert.That(context?.MyCustomType?.MyCustomValue, Is.EqualTo(expectedValue));
+        }
+
+        [Test(Description = "A TypeConverter can be applied to a custom type in order to have it be automatically parsed for all instances.")]
+        public void SystemComponentModelTypeConverterAttributeCanBeConvertedFromString()
+        {
+            var expectedValue = Guid.NewGuid().ToString();
+            GetCakeHost<SystemComponentModelTypeConverterTask>()
+                .Run(FormatCustomArguments(nameof(SystemComponentModelTypeConverterTask),
+                (nameof(SystemComponentModelTypeConverterTask.MyOtherCustomType), expectedValue)));
+
+            var context = GetContext<SystemComponentModelTypeConverterTask>();
+
+            //Proves that it doesn't populate, even though we're not passing in an argument for InvalidTypeConverter
+            Assert.That(context?.MyOtherCustomType?.MyCustomValue, Is.EqualTo(expectedValue));
+        }
+
+        [Test]
+        public void RequiredTaskThrowsRequiredExceptionInsteadOfCastingException()
+        {
+            GetCakeHost<TypeConverterInvalidTask>()
+                .Run(FormatCustomArguments(nameof(TypeConverterInvalidTask)));
+
+            var exception = GetSprinklesExceptionForProperty<TypeConverterInvalidTask>(nameof(TypeConverterInvalidTask.RequiredType));
+            Assert.That(exception?.InnerMessage, Is.EqualTo(SprinklesValidator.Message_ArgumentWasNotSet));
         }
     }
 }

@@ -1,5 +1,6 @@
 ﻿using System.Collections;
 using System.Collections.Immutable;
+using System.ComponentModel;
 using System.Linq.Expressions;
 using System.Reflection;
 using Cake.Frosting;
@@ -119,13 +120,21 @@ namespace Cake.Sprinkles.Module.Annotations
 
         internal static IList<string> GetArgumentExampleValues(PropertyInfo propertyInfo)
         {
+            var values = new List<string>();
             var attrs = propertyInfo.GetCustomAttributes(typeof(TaskArgumentExampleValueAttribute))?.ToList();
             if (attrs?.Count > 0)
             {
-                return attrs.Select(x => ((TaskArgumentExampleValueAttribute)x).UsageExample).ToList();
+                values.AddRange(attrs.Select(x => ((TaskArgumentExampleValueAttribute)x).UsageExample).ToList());
             }
 
-            return new List<string>();
+            var typeConverter = TypeDescriptor.GetConverter(propertyInfo.PropertyType) as ITaskArgumentTypeConverter;
+            var exampleValues = typeConverter?.GetExampleInputValues()?.ToList();
+            if (exampleValues != null)
+            {
+                values.AddRange(exampleValues);
+            }
+
+            return values;
         }
 
         internal static string GetArgumentEnumerationDelimiterName(PropertyInfo propertyInfo)

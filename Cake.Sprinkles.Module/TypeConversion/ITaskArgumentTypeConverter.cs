@@ -25,11 +25,5 @@ namespace Cake.Sprinkles.Module.TypeConversion
         /// <returns>An <see cref="IEnumerable{String}"/> of Usage Values.</returns>
         public IEnumerable<string> GetExampleInputValues();
 
-        /// <summary>
-        /// Converts a string into an instance of another type.
-        /// </summary>
-        /// <param name="argument">The task argument value, from which you can get a single string or a list of strings.</param>
-        /// <returns>An instance of another type, created from the string.</returns>
-        public object? Convert(TaskArgument argument);
     }
 }
