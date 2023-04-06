@@ -2,7 +2,7 @@
     <PropertyGroup>
         <PackageId>Cake.Sprinkles.Module</PackageId>
 		<Title>Cake Sprinkles Module</Title>
-        <PackageVersion>1.0.0</PackageVersion>
+        <PackageVersion>1.0.1</PackageVersion>
         <Authors>Edward Lichtman</Authors>
         <Description>A module to be used with Cake Frosting. It automatically injects arguments from the CLI, Cake.Config file, or Environment Variables into C# properties through Decorator attributes, and uses those same decorator attributes to enhance documentation and reduce the scope of messaging you need to include for users of your Cake Frosting application.</Description>
 		<PackageDescription>$(Description)</PackageDescription>
@@ -10,7 +10,11 @@
 		<PackageIcon>.\CakeSprinklesIcon.png</PackageIcon>
 		<PackageReadmeFile>.\readme.md</PackageReadmeFile>
 		<PackageTags>Cake;Script;Build</PackageTags>
-		<PackageReleaseNotes>The initial publish of Cake Sprinkles. It includes automatic argument parsing, enhanced documentation, custom validation and the custom type conversion.</PackageReleaseNotes>
+		<PackageReleaseNotes>Includes the following:
+		    * Now you can apply a [TypeConverter] attribute to a custom class type and it will work.
+		    * If you create a TaskArgumentTypeConverter&lt;TType&gt;, you can now use that as a TypeConverter, since it inherits from System.ComponentModel.TypeConverter.
+		    * If you have a custom type converter, you can still rely on the [TaskArgumentIsRequired] attribute.
+		</PackageReleaseNotes>
 		<PackageLicenseExpression>MIT</PackageLicenseExpression>
     </PropertyGroup>
 
