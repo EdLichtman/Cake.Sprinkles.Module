@@ -11,19 +11,21 @@
 		<PackageReadmeFile>readme.md</PackageReadmeFile>
 		<PackageTags>Cake;Script;Build</PackageTags>
 		<PackageReleaseNotes>
-		2.0.0 Release Notes:
-		    * Breaking change to 2.0.0 covers up break from 1.0.0 to 1.0.1, whereby the TaskArgumentTypeConverter abstract "ConvertType" function must be modified to include "CultureInfo". It is my intention to delete 1.0.1 and 1.0.2 since the change is indeed breaking.
+			2.0.0 Release Notes:
+			* Breaking change to 2.0.0 covers up break from 1.0.0 to 1.0.1, whereby the TaskArgumentTypeConverter abstract "ConvertType" function must be modified to include "CultureInfo". It is my intention to delete 1.0.1 and 1.0.2 since the change is indeed breaking.
 			* Fixes a defect where you cannot check the arguments of the default task by requiring the input of the --arguments flag. Therefore, you must type --target=Target --description --arguments, and it will display the cake sprinkles decorations.
-		
-		1.0.2 Release Notes:
-		    * Certain other NuGet Servers (In my case, BaGet) do not recognize .\readme.md. In my case it does recognize readme.md without .\, so this version bump is to make it easier for other people (and myself) to incorporate this into your internal NuGet Server.
-			
-		1.0.1 Release Notes:
+			* If you have a custom type converter, you can still rely on the [TaskArgumentIsRequired] attribute. -- was not properly fixed in 1.0.1, however integration tests have been added to ensure it works properly now.
+			* If you have a custom type converter and it's been added to a TaskArgument via the TaskArgumentConverter attribute, and you have forgotten to Register the TaskArgumentConverter attribute, it will fail early and fail fast.
+
+			1.0.2 Release Notes [DEPRECATED]:
+			* Certain other NuGet Servers (In my case, BaGet) do not recognize .\readme.md. In my case it does recognize readme.md without .\, so this version bump is to make it easier for other people (and myself) to incorporate this into your internal NuGet Server.
+
+			1.0.1 Release Notes [DEPRECATED]:
 			* Now you can apply a [TypeConverter] attribute to a custom class type and it will work.
-		    * If you create a TaskArgumentTypeConverter&lt;TType&gt;, you can now use that as a TypeConverter, since it inherits from System.ComponentModel.TypeConverter.
+			* If you create a TaskArgumentTypeConverter&lt;TType&gt;, you can now use that as a TypeConverter, since it inherits from System.ComponentModel.TypeConverter.
 		    * If you have a custom type converter, you can still rely on the [TaskArgumentIsRequired] attribute.
 		
-		1.0.0 Release Notes: 
+		    1.0.0 Release Notes: 
 			* The initial publish of Cake Sprinkles. It includes automatic argument parsing, enhanced documentation, custom validation and the custom type conversion.
 		</PackageReleaseNotes>
 		<PackageLicenseExpression>MIT</PackageLicenseExpression>
