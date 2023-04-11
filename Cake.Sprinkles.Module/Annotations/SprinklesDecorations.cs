@@ -186,17 +186,24 @@ namespace Cake.Sprinkles.Module.Annotations
             return new List<TaskArgumentValidationAttribute>();
         }
 
-        internal static ITaskArgumentTypeConverter? GetArgumentConverter(PropertyInfo propertyInfo, IList<ITaskArgumentTypeConverter> converters)
+        internal static Type? GetArgumentConverterType(PropertyInfo propertyInfo)
         {
             var attr = propertyInfo.GetCustomAttribute(typeof(TaskArgumentConverterAttribute));
             if (attr != null)
             {
-                var type = ((TaskArgumentConverterAttribute)attr).ConverterType;
-                if (type != null)
-                {
-                    var converterTypes = converters.ToDictionary(x => x.GetType());
-                    return converterTypes.ContainsKey(type) ? converterTypes[type] : null;
-                }
+                return ((TaskArgumentConverterAttribute)attr).ConverterType;
+            }
+
+            return null;
+        }
+
+        internal static ITaskArgumentTypeConverter? GetArgumentConverter(PropertyInfo propertyInfo, IList<ITaskArgumentTypeConverter> converters)
+        {
+            var type = GetArgumentConverterType(propertyInfo);
+            if (type != null)
+            {
+                var converterTypes = converters.ToDictionary(x => x.GetType());
+                return converterTypes.ContainsKey(type) ? converterTypes[type] : null;
             }
 
             return null;

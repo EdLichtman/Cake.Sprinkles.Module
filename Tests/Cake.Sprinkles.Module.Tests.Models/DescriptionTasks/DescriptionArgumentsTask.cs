@@ -1,5 +1,7 @@
 ﻿using Cake.Frosting;
 using Cake.Sprinkles.Module.Annotations.Arguments;
+using Cake.Sprinkles.Module.Tests.Models.TypeConversion;
+using Cake.Sprinkles.Module.TypeConversion;
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;

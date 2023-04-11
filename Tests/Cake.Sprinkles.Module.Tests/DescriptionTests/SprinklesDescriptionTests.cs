@@ -446,6 +446,95 @@ namespace Cake.Sprinkles.Module.Tests.DescriptionTests
                 RegexProvider.GetAcceptsType<MyOtherCustomType>());
         }
 
+        [Test(Description = $"This pairs with {nameof(CanGetTaskDescriptionForDefaultTask)} to prove that all tasks can be named when no task is specified, and that it does not cause Default task to be described.")]
+        public void CanGetAllTaskDescriptionsWhenSpecifyingNoTarget()
+        {
+            console = GetConsoleReader<DefaultTask>(false);
+
+            Assert.IsNull(console.GetIndex(RegexProvider.DependencyTreeMessage, true));
+
+            // Not using Assert.Multiple because when we aggregate it, and there's an error, we can't see the stack trace and know where the error is.
+            var headerTitleIndex = console.GetIndex(RegexProvider.TaskDescriptionHeader);
+            var headerSpacerLines = console.GetIndices(RegexProvider.HeaderSeparater);
+            Assert.That(headerSpacerLines, Does.Contain(headerTitleIndex + 1));
+
+            var defaultTaskIndex = console.GetIndex(RegexProvider.GetNoTargetOutputForTask<DefaultTask>());
+            Assert.That(defaultTaskIndex, Is.GreaterThan(headerTitleIndex));
+
+            var categorizedTaskIndex = console.GetIndex(RegexProvider.GetNoTargetOutputForTask<NoArgumentTask>());
+            Assert.That(categorizedTaskIndex, Is.GreaterThan(headerTitleIndex));
+
+            var uncategorizedTaskIndex = console.GetIndex(RegexProvider.GetNoTargetOutputForTask<DescriptionArgumentsTask>());
+            Assert.That(uncategorizedTaskIndex, Is.GreaterThan(headerTitleIndex));
+
+            var runThisCommandFurtherIndex = console.GetIndex(RegexProvider.RunCommandWithTarget);
+
+            Assert.That(headerSpacerLines, Does.Contain(runThisCommandFurtherIndex - 1));
+        }
+        [Test(Description = "When putting this together I noticed that the target getting passed into the CakeHost was 'Default', so I blatantly ignored the target. This causes the Default task to not get described.")]
+        public void CanGetTaskDescriptionForDefaultTask()
+        {
+            console = GetConsoleReader<DefaultTask>(true);
+            // Get the index of the "following arguments" headers
+
+            // Validate the task, and that the description shows up as expected.
+            var defaultTaskNameIndex = console.GetIndex(RegexProvider.GetTargetTaskName<DefaultTask>());
+            var optionalArgumentsHeaderIndex = console.GetIndex(RegexProvider.FollowingArgumentsOptional);
+            Assert.That(optionalArgumentsHeaderIndex, Is.GreaterThan(defaultTaskNameIndex));
+
+            var run = console.ConfirmRunContains(
+                RegexProvider.GetArgument(nameof(DefaultTask.DefaultDescribedValue)),
+                RegexProvider.GetArgumentDescription<DefaultTask>(nameof(DefaultTask.DefaultDescribedValue)),
+                RegexProvider.GetAcceptsType<string>());
+
+            Assert.That(run.Start.Value, Is.GreaterThan(optionalArgumentsHeaderIndex));
+        }
+
+        [Test]
+        public void CanRequireCustomConversionType()
+        {
+            console = GetConsoleReader<CustomTypeTask>(
+                true,
+                host => host.RegisterTypeConverter<TypeWithUsageConverter>());
+
+            Assert.IsNull(console.GetIndex(RegexProvider.FollowingArgumentsOptional, true));
+
+            var requiredArgumentsHeaderIndex = console.GetIndex(RegexProvider.FollowingArgumentsRequired);
+            
+            console.ConfirmAllLinesBetween(
+                requiredArgumentsHeaderIndex,
+                RegexProvider.GetArgument(nameof(CustomTypeTask.CustomType)));
+        }
+
+        [Test]
+        public void CanDisplayUsageExamplesForCustomConversionType()
+        {
+            console = GetConsoleReader<CustomTypeTask>(
+                true,
+                host => host.RegisterTypeConverter<TypeWithUsageConverter>());
+
+            var runRegex = 
+                new TypeWithUsageConverter()
+                .GetExampleInputValues()
+                .Select(x => RegexProvider.GetRawUsage($"--CustomType={x}"))
+                .ToList();
+
+            runRegex.Add(RegexProvider.GetAcceptsType<TypeWithUsage>());
+            console.ConfirmRunContains(
+                RegexProvider.GetArgument(nameof(CustomTypeTask.CustomType)),
+                runRegex.ToArray());
+        }
+
+        [Test]
+        public void NotifiesYouBeforeDescriptionIfYouForgotToRegisterTaskArgument()
+        {
+            console = GetConsoleReader<CustomTypeTask>(
+                true);
+
+            Assert.That(console.GetIndex(RegexProvider.CompileErrorOccurred, true), Is.Not.Null);
+            Assert.That(console.GetIndex(RegexProvider.ForgotToRegisterTypeConverter, true), Is.Not.Null);
+        }
+
         private ConsoleReader GetConsoleReader<TTask>(bool includeTarget, params (string key, string? value)[] args) where TTask : IFrostingTask
         {
             var argsList = args.ToList();
@@ -454,6 +543,7 @@ namespace Cake.Sprinkles.Module.Tests.DescriptionTests
             {
                 var target = SprinklesDecorations.GetTaskName(typeof(TTask));
                 argsList.Add(("target",target));
+                argsList.Add(("arguments", null));
             }
             
             return new ConsoleReader(() =>
@@ -470,6 +560,7 @@ namespace Cake.Sprinkles.Module.Tests.DescriptionTests
             {
                 var target = SprinklesDecorations.GetTaskName(typeof(TTask));
                 argsList.Add(("target", target));
+                argsList.Add(("arguments", null));
             }
 
             return new ConsoleReader(() =>

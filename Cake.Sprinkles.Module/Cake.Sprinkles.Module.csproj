@@ -11,6 +11,10 @@
 		<PackageReadmeFile>readme.md</PackageReadmeFile>
 		<PackageTags>Cake;Script;Build</PackageTags>
 		<PackageReleaseNotes>
+		2.0.0 Release Notes:
+		    * Breaking change to 2.0.0 covers up break from 1.0.0 to 1.0.1, whereby the TaskArgumentTypeConverter abstract "ConvertType" function must be modified to include "CultureInfo". It is my intention to delete 1.0.1 and 1.0.2 since the change is indeed breaking.
+			* Fixes a defect where you cannot check the arguments of the default task by requiring the input of the --arguments flag. Therefore, you must type --target=Target --description --arguments, and it will display the cake sprinkles decorations.
+		
 		1.0.2 Release Notes:
 		    * Certain other NuGet Servers (In my case, BaGet) do not recognize .\readme.md. In my case it does recognize readme.md without .\, so this version bump is to make it easier for other people (and myself) to incorporate this into your internal NuGet Server.
 			

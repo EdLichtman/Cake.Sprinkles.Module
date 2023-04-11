@@ -1,5 +1,6 @@
 ﻿using System.Reflection;
 using Cake.Cli;
+using Cake.Common;
 using Cake.Core;
 using Cake.Frosting;
 using Cake.Sprinkles.Module.Annotations;
@@ -15,13 +16,14 @@ namespace Cake.Sprinkles.Module.Engine
     {
         private const string Message_FixErrorsFirst = "Error(s) occurred during compilation. Please fix the task before you can run this tool.";
         private const string Message_ThereAreDependencies = "This task has one or more dependencies. Run the dependency tree tool (--tree) to discover those dependencies, and then run the description tool (--description) while specifying target (-t,--target) as one of those dependencies to describe the allowed arguments for that dependency.";
-        private const string Message_RunCommandWithTargetForArguments = "Run this command while specifying target (-t,--target) to describe the allowed arguments.";
+        private const string Message_RunCommandWithTargetForArguments = "Run this command while specifying target (-t [TARGET] | --target [TARGET]), and requesting arguments (--arguments) to describe the allowed arguments.";
         private readonly IEnumerable<ITaskArgumentTypeConverter> _taskArgumentTypeConverters;
         private readonly IConsole _console;
         private readonly SprinklesTaskDescriptors _taskDescriptors;
         private readonly SprinklesValidator _validator;
         private readonly SprinklesArgumentsProvider _argumentsProvider;
         private readonly int _maxTaskNameLength;
+        private readonly bool _printArguments;
 
         public SprinklesDescriptionScriptHost(
             ICakeEngine engine, 
@@ -39,6 +41,7 @@ namespace Cake.Sprinkles.Module.Engine
             _validator = validator;
             _argumentsProvider = argumentsProvider;
             _maxTaskNameLength = GetMaxTaskNameLength();
+            _printArguments = context.HasArgument("arguments");
         }
 
         public override Task<CakeReport> RunTargetAsync(string target)
@@ -60,12 +63,7 @@ namespace Cake.Sprinkles.Module.Engine
 
         private void PrintTaskDescriptions(params string[] targets)
         {
-            if (targets.Length == 1 && targets[0] == "Default")
-            {
-                targets = new String[0];
-            }
-
-            if (targets.Length == 0)
+            if (!_printArguments)
             {
                 PrintAllDescriptions();
             } 

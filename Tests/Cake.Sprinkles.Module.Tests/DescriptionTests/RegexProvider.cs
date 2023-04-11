@@ -16,7 +16,7 @@ namespace Cake.Sprinkles.Module.Tests.DescriptionTests
         public static Regex HeaderSeparater => new Regex("^=*$");
         public static Regex TaskDescriptionHeader => new Regex("^Task *Description *$");
         public static Regex DependencyTreeMessage => new Regex("^This task has one or more dependencies\\. Run the dependency tree tool \\(--tree\\) to discover those dependencies, and then run the description tool \\(--description\\) while specifying target \\(-t,--target\\) as one of those dependencies to describe the allowed arguments for that dependency\\.$");
-        public static Regex RunCommandWithTarget => new Regex("^Run this command while specifying target \\(-t,--target\\) to describe the allowed arguments.$");
+        public static Regex RunCommandWithTarget => new Regex("^Run this command while specifying target \\(-t \\[TARGET\\] \\| --target \\[TARGET\\]\\), and requesting arguments \\(--arguments\\) to describe the allowed arguments.$");
         public static Regex NoArgumentsAvailable => new Regex("^No Arguments available.$");
         public static Regex CanBeFlag => new Regex("^ *\\* Can be provided as a flag$");
         /// <summary>
@@ -29,7 +29,7 @@ namespace Cake.Sprinkles.Module.Tests.DescriptionTests
         public static Regex FollowingArgumentsRequired => new Regex("^The following arguments are required: *$");
         public static Regex FollowingArgumentsOptional => new Regex("^The following arguments are optional: *$");
         public static Regex CompileErrorOccurred => new Regex("^Error\\(s\\) occurred during compilation\\. Please fix the task before you can run this tool\\.$");
-
+        public static Regex ForgotToRegisterTypeConverter => new Regex(SprinklesValidator.Message_BeSureToAddTypeConverter);
         public static Regex GetNoTargetOutputForTask<TTask>() where TTask : IFrostingTask
         {
             var taskName = SprinklesDecorations.GetTaskName(typeof(TTask));

@@ -49,7 +49,7 @@ namespace Cake.Sprinkles.Module.Tests
             Assert.That(context?.OtherConversionType, Is.Null);
 
             var exception = GetSprinklesExceptionForProperty<TypeConverterTask>(nameof(TypeConverterTask.ConversionTypeWithUsage));
-            Assert.That(exception?.AdditionalInformation, Does.Contain(SprinklesValidator.Message_BeSureToAddTypeConverter));
+            Assert.That(exception?.InnerMessage, Is.EqualTo(SprinklesValidator.Message_BeSureToAddTypeConverter));
 
             exception = GetSprinklesExceptionForProperty<TypeConverterTask>(nameof(TypeConverterTask.OtherConversionType));
             Assert.That(exception?.AdditionalInformation, Does.Contain(SprinklesValidator.Message_BeSureToAddTypeConverter));
@@ -81,6 +81,8 @@ namespace Cake.Sprinkles.Module.Tests
 
             GetCakeHost<TypeConverterTask>()
                 .RegisterTypeConverter<TypeWithUsageListConverter>()
+                .RegisterTypeConverter<TypeWithoutUsageConverter>()
+                .RegisterTypeConverter<TypeWithUsageConverter>()
                 .Run(FormatCustomArguments(
                     nameof(TypeConverterTask),
                 (nameof(TypeConverterTask.ConversionTypeWithListUsage), input1)));

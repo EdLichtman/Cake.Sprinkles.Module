@@ -94,9 +94,9 @@ DeployWebApp                  Deploys a Web Application.
 Run this command while specifying target (-t,--target) to describe the allowed arguments.
 ```
 
-Notice how you can now include --target, to specify the task. This is what happens when you run the description with a target.
+Notice how you can now include --target, to specify the task, and you can include --arguments to describe the task arguments. This is what happens when you run the description with a target.
 ```
->dotnet build --description --target=DeployWebApp
+>dotnet build --description --arguments --target=DeployWebApp
 Task                          Description
 ================================================================================
 DeployWebApp                  Deploys a Web Application.

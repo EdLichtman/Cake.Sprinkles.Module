@@ -47,7 +47,16 @@ namespace Cake.Sprinkles.Module.Validation
             var isExternalArguments = SprinklesDecorations.IsExternalTaskArguments(property);
 
             var converters = _typeConverters.Where(x => x.ConversionType == property.PropertyType).ToList();
-            var hasConverter = converters.Any();
+            var hasRegisteredConverter = converters.Any();
+            var attributeConverterType = SprinklesDecorations.GetArgumentConverterType(property);
+            
+            if (attributeConverterType != null && !hasRegisteredConverter)
+            {
+                throw new SprinklesException(
+                    property,
+                    Message_BeSureToAddTypeConverter, 
+                    $"Type={attributeConverterType.Name}");
+            }
             if (converters.Any())
             {
                 if (!SprinklesDecorations.IsArgumentConverterValid(property))
@@ -69,7 +78,7 @@ namespace Cake.Sprinkles.Module.Validation
                 }
             }
 
-            if (!hasConverter)
+            if (!hasRegisteredConverter)
             {
                 if (!isEnumeration)
                 {
